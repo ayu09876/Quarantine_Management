@@ -1,0 +1,124 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model RequestModel
+
+
+<div class="row mt-2">
+    <div class="d-flex justify-content-between mb-3">
+        <div class="d-flex align-items-center">
+            <h5 class="text-dark mb-0"><i class="fa fa-info-circle mr-2 text-success"></i> Request</h5>
+            <h5 class="text-dt mb-0 ml-1">Information</h5>
+        </div>
+    </div>
+</div>
+<div class="row mt-2">
+    <table class="table table-sm border" id="tbl_details_approve" style="font-size:10pt; width: 100%;">
+        <thead>
+            <tr>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">Request ID</th>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">Reference</th>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">Box Type</th>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">Requestor</th>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">Request Date</th>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">PIC</th>
+                <th class="font-calibri border-right text-center text-white align-middle bg-info" style="">Maximum Aging</th>
+                <th class="font-calibri border-right text-center text-white align-middle" style="background-color:#17a2b8">Rack</th>
+                <th class="font-calibri border-right text-center text-white align-middle bg-warning" style="">Remark</th>
+                <th class="font-calibri border-right text-center text-white align-middle bg-warning" style="">PPAP</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-center align-middle">@Model.req_id</td>
+                <td class="text-center align-middle">@Model.reference</td>
+                <td class="text-center align-middle">@Model.box_type</td>
+                <td class="text-center align-middle">@Model.requestor</td>
+                <td class="text-center align-middle">@Model.request_date</td>
+                <td class="text-center align-middle">@Model.quantity</td>
+                <td class="text-center align-middle">@Model.max_aging</td>
+                <td class="text-center align-middle">@Model.rack</td>
+                <td class="text-center align-middle">@Model.remark</td>
+                <td class="text-center align-middle">@Model.ppap</td>
+
+
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="row mt-2">
+    <div class="d-flex justify-content-between mb-3">
+        <div class="d-flex align-items-center">
+            <h5 class="text-dark mb-0"><i class="fa fa-exclamation-triangle mr-2 text-success"></i> Issue</h5>
+            <h5 class="text-dt mb-0 ml-1">Information</h5>
+        </div>
+    </div>
+</div>
+<div class="row mt-2">
+    <table class="table table-sm border" id="tbl_details_approve" style="font-size:10pt; width: 100%;">
+        <thead>
+            <tr>
+                <th class="font-calibri border-right text-center text-white align-middle" width="30%" style="background-color:#17a2b8">Source of Issue</th>
+                <th class="font-calibri border-right text-center text-white align-middle" width="30%" style="background-color:#17a2b8">Issue Category</th>
+                <th class="font-calibri border-right text-center text-white align-middle" width="40%" style="background-color:#17a2b8">Issue Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-center align-middle">@Model.source_issue</td>
+                <td class="text-center align-middle">@Model.issue_category</td>
+                <td class="text-center align-middle">@Model.issue_detail</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="row mt-2">
+    <div class="d-flex justify-content-between mb-3">
+        <div class="d-flex align-items-center">
+            <h5 class="text-dark mb-0"><i class="fa fa-exclamation-triangle mr-2 text-success"></i> Sloc</h5>
+            <h5 class="text-dt mb-0 ml-1">Information</h5>
+        </div>
+    </div>
+</div>
+<div class="row mt-2">
+    <table class="table table-sm border" id="tbl_details_approve" style="font-size:10pt; width: 100%;">
+        <thead>
+            <tr>
+                <th class="font-calibri border-right text-center text-white align-middle" width="25%" style="background-color:#17a2b8">Current Sloc</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-center align-middle">@Model.dest_sloc</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="row mt-2">
+    <div class="d-flex justify-content-between mb-3">
+        <div class="d-flex align-items-center">
+            <h5 class="text-dark mb-0"><i class="fa fa-exclamation-triangle mr-2 text-success"></i> SAP</h5>
+            <h5 class="text-dt mb-0 ml-1">Information</h5>
+        </div>
+    </div>
+</div>
+<div class="row mt-2">
+    <table class="table table-sm border" id="tbl_details_approve" style="font-size:10pt; width: 100%;">
+        <thead>
+            <tr>
+                <th class="font-calibri border-right text-center text-white align-middle" width="25%" style="background-color:#17a2b8">SAP Status</th>
+                <th class="font-calibri border-right text-center text-white align-middle" width="25%" style="background-color:#17a2b8">Final Status</th>
+                <th class="font-calibri border-right text-center text-white align-middle" width="50%" style="background-color:#17a2b8">Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-center align-middle">@Model.sap_status</td>
+                <td class="text-center align-middle">@Model.final_status</td>
+                <td class="text-center align-middle">@Model.result</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,33 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+<table id="tbl_details_filter" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 11px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white">Route Flow</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Route Level</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Route Description</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Modify by</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Last Updated</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (ApproverModel item in Model)
+        {
+            <tr>
+                <td class="align-middle text-center border-right"> @item.route_flow </td>
+                <td class="align-middle text-center border-right"> @item.route_lvl </td>
+                <td class="align-middle text-center border-right"> @item.route_desc </td>
+                <td class="align-middle text-center border-right"> @item.modifier_name </td>
+                <td class="align-middle text-center border-right"> @item.record_date_up </td>
+                <td class="align-middle text-center">
+                    <button class="btn btn-warning btn-sm" style="width:3rem;" id="EDIT" onclick="btn_update(`@item.route_flow`,`@item.route_lvl`,`@item.route_desc`)"><i class="fas fa-edit"></i> </button>&emsp;
+                    <button class="btn btn-danger btn-sm" id="DELETE" style="width:3rem;" onclick="btn_delete('@item.route_flow')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

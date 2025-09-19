@@ -1,0 +1,83 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model List<RequestModel>
+
+
+<style>
+    .status-finish-analysis {
+        background-color: #D2FF72;
+    }
+
+    .status-back-to-prod {
+        background-color: #78C1F3;
+    }
+
+    .status-scrap {
+        background-color: #CA955C;
+    }
+
+    .status-send-to-blp {
+        background-color: #FEFFA7;
+    }
+
+    .status-send-to-sup {
+        background-color: #AEDBCE;
+    }
+</style>
+
+<table id="tbl_details_filter" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 11px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white">Request ID</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Requestor</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Reference</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Quantity</th>
+            <th class="font-calibri border-right align-middle text-center text-white">PIC</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Remark</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Request Date</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Finish Date</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Status</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Final Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (RequestModel item in Model)
+        {
+            string statusClass = item.status switch
+            {
+                "Finish" => "status-finish-analysis",
+               
+                _ => ""
+            };
+            string statusClass1 = item.final_status switch
+            {
+                "Back to Production" => "status-back-to-prod",
+                "Scrap" => "status-scrap",
+                "Send to BLP" => "status-send-to-blp",
+                "Send to Supplier" => "status-send-to-sup",
+                _ => ""
+            };
+            <tr>
+                <td class="align-middle text-center border-right" style="font-weight:bold">@Html.Raw(DisplayValue(item.req_id))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.requestor))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.reference))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.quantity))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.pic))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.remark))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.request_date))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.finish_date))</td>
+                <td class="align-middle text-center border-right @statusClass">@Html.Raw(DisplayValue(item.status))</td>
+                <td class="align-middle text-center border-right @statusClass1">@Html.Raw(DisplayValue(item.final_status))</td>
+               
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string DisplayValue(object value)
+    {
+        return value == null || string.IsNullOrEmpty(value.ToString()) ? "<span style='color:red'>NA</span>" : value.ToString();
+    }
+}

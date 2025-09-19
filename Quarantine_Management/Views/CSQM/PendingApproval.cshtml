@@ -1,0 +1,765 @@
+﻿@using Quarantine_Management.Function
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    DateTime dt = DateTime.Now;
+    var Month = dt.ToString("MMMM");
+}
+
+<style>
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    #image {
+        transition: transform 0.2s;
+        margin: auto;
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+
+    .modal-dialog {
+        max-width: 110% !important;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .modal {
+        padding-right: 4px !important;
+        padding: .5%;
+    }
+
+    .modal-dialog {
+        max-width: 400px;
+    }
+
+    .modal-header {
+        padding: 10px 15px;
+    }
+
+    .modal-body {
+        padding: 10px 15px;
+    }
+
+</style>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row pt-2">
+            <div class="col-lg-12 mt-2 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-start align-items-center w-100" style="max-width: 350px !important;">
+                            <h2 class="text-dark fw-bold"><i class='fas fa-envelope-open-text'></i>&nbsp;Pending </h2>
+                            <h2 class="text-dt fw-bold">&nbsp;Approval&nbsp;</h2>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date From</label>
+                                <input type="date" id="date_from" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date From" />
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date To</label>
+                                <input type="date" id="date_to" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date To" />
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_apply" name="btn_apply" onclick="applyfilter()" class="btn btn-primary btn-sm btn-block mt-2"><i class="fa fa-search mr-1"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_reset" name="btn_reset" class="btn btn-sm btn-danger btn-block mt-2" onclick="window.location.reload()"><i class="fa fa-history mr-1"></i> </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <div id="spinner_loading" class="text-center mt-2">
+                                    <i class="fas fa-spinner fa-spin fa-lg" style="font-size:30pt;"></i>
+                                </div>
+                                <div class="table-responsive" id="table_details" style="overflow-x: auto; white-space: nowrap; scrollbar-width: thin; scroll-behavior: smooth;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal_detail" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i>Request Details
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_detail"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div id="modal_edit" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i>Waiting Approval
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_req_detail"></div>
+                        <div class="row mt-2 mb-2">
+                            <label style="font-size:10pt; font-weight: bold">Coment Action<span style="color: red; font-weight:bold;">*</span></label>
+                            <input type="hidden" class="form-control" id="id_req" >
+                            <textarea class="form form-control" id="comentaction" rows="4" maxlength="100" placeholder="Reason..." style="width: 100%; min-height: 74px; height: 74px; max-height:100%; resize: vertical;"></textarea>
+                            <div id="counter"></div>
+                        </div>
+                        <div class="row mt-3 float-right">
+                            <div class="justify-content-between" style="width:100%;">
+                                <button class="btn btn-success mr-2 ml-2" onclick="btn_approve()"><i class="fas fa-check"></i> Approve</button>
+                                <button class="btn btn-danger" onclick="btn_decline()"><i class="fas fa-times"></i> Decline</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="modal_edit_declined" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i>Waiting Approval
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <!-- Decline Alert -->
+            <div class="alert alert-danger mx-3 mt-2 mb-0 py-2" style="background-color: #f8d7da; border-color: #f5c6cb; color: #721c24;">
+                <h6 class="alert-heading font-weight-bold mb-1">The Request has been Updated by Requestor</h6>
+                <p class="mb-0 small">Updated Comment: <span id="updatedDeclined" class="font-weight-bold"></span></p>
+            </div>
+
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_req_detail_declined"></div>
+                        <div class="row mt-2 mb-2">
+                            <label style="font-size:10pt; font-weight: bold">Coment Action<span style="color: red; font-weight:bold;">*</span></label>
+                            <input type="hidden" class="form-control" id="id_req_verify">
+                            <textarea class="form form-control" id="comentaction_updated" rows="4" maxlength="100" placeholder="Reason..." style="width: 100%; min-height: 74px; height: 74px; max-height:100%; resize: vertical;"></textarea>
+                            <div id="counter"></div>
+                        </div>
+                        <div class="row mt-3 float-right">
+                            <div class="justify-content-between" style="width:100%;">
+                                <button class="btn btn-success mr-2 ml-2" onclick="btn_approve_verify()"><i class="fas fa-check"></i> Approve</button>
+                                <button class="btn btn-danger" onclick="btn_decline_verify()"><i class="fas fa-times"></i> Decline</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="modal fade" id="show_image" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Image Preview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="enlargedImage" src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3dcd58">
+                <h5 class="text-white">
+                    <i class="fa fa-info-circle mr-2"></i> Picture <span id="test-id"></span>
+                </h5>
+                <input onchange="readimgng(this);" type="file" id="image_ng_upload" name="image_ng_upload" accept=".jpg, .jpeg, .png" hidden />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="imageModalUpdate" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3dcd58">
+                <h5 class="text-white">
+                    <i class="fa fa-info-circle mr-2"></i> Picture <span id="test-id"></span>
+                </h5>
+                <input onchange="readimgng(this);" type="file" id="image_ng_upload" name="image_ng_upload" accept=".jpg, .jpeg, .png" hidden />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        let isSearch = false;
+        var loading = "<div class='text-center'><i class='fa fa-4x fa-spinner fa-spin'></i></div>";
+
+
+        $(document).ready(function () {
+            $.ajax({
+                url: "@Url.Action("GetFilterDate")",
+                type: "POST",
+                success: function (data) {
+                    $('#date_from').val(data[0].date_From);
+                    $('#date_to').val(data[0].date_To);
+                    applyfilter();
+                }
+            });
+
+
+
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+        });
+
+        function applyfilter() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+
+            $("#table_details").html('');
+            var table = $("#table_details");
+            var table1 = $("#tbl_details_filter");
+
+            $.ajax({
+                url: "@Url.Action("GetPendingApprovalData")",
+                type: "Get",
+                data: {
+                    date_from: date_from,
+                    date_to: date_to
+                },
+                success: function (data) {
+                    table.html(data);
+                    $("#table_details").attr('hidden', false);
+                    $("#table_details #tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": false,
+                        "scrollX": false,
+                        "searching": true,
+                        "lengthChange": true,
+                        "fixedHeader": true,
+                        "initComplete": function (settings, json) {
+                            $("#tbl_details_filter").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");
+                        },
+                    });
+                },
+                complete: function () {
+                    $('#spinner_loading').hide();
+                }
+            });
+        }
+
+        function zoomImage(image) {
+            $("#show_image").modal("show");
+            $("#enlargedImage").attr("src", image);
+        }
+
+
+        $(document).ready(function () {
+            $('#statusFilter').select2({
+                placeholder: 'Select Status',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetStatusFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+        })
+
+        function btn_picture(id) {
+            console.log("Button clicked for ID:", id);
+            $('#imageModal').modal('show');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetImages", "User")",
+                data: { id_req: id },
+                success: function (data) {
+                    console.log("Received data:", data);
+
+                    if (data.items && data.items.length > 0) {
+                        var picture = data.items[0].picture;
+                        console.log("Found picture:", picture);
+                        $("#image").attr("src", "../images/upload/" + picture);
+                        $("#image-filename").text(picture);
+                        $("#req_id").html(id);
+                    } else {
+                        console.log("No images found in data");
+                        $("#image").attr("src", "");
+                        $("#image-filename").text("No image found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching image:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert("Error loading image. Check console for details.");
+                }
+            });
+        }
+
+        function picture(id) {
+            console.log("Button clicked for ID:", id);
+            $('#imageModalUpdate').modal('show');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetImages", "User")",
+                data: { id_req: id },
+                success: function (data) {
+                    console.log("Received data:", data);
+
+                    if (data.items && data.items.length > 0) {
+                        var picture = data.items[0].picture;
+                        console.log("Found picture:", picture);
+                        $("#image").attr("src", "../images/upload/" + picture);
+                        $("#image-filename").text(picture);
+                        $("#req_id").html(id);
+                    } else {
+                        console.log("No images found in data");
+                        $("#image").attr("src", "");
+                        $("#image-filename").text("No image found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching image:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert("Error loading image. Check console for details.");
+                }
+            });
+        }
+        function detail_data(id) {
+
+            $('#modal_edit').modal('show');
+            $('#id_req').val(id);
+
+            $('#table_req_detail').html('');
+
+            $.ajax({
+                url: '@Url.Action("GetDetailPendingApprovalUpdate")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_req_detail').html(data);
+                }
+            });
+        }
+        function detail_data_declined(id, updated_coment) {
+
+            $('#modal_edit_declined').modal('show');
+            $('#id_req_verify').val(id);
+            $('#updatedDeclined').text(updated_coment);
+            $('#table_req_detail_declined').html('');
+
+            $.ajax({
+                url: '@Url.Action("GetDetailUpdatedDeclined")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_req_detail_declined').html(data);
+                }
+            });
+        }
+        function btn_approve() {
+            var id_req = $('#id_req').val();
+            var status = 'Approved';
+            var verify_coment = $('#comentaction').text();
+            if (status === '' || verify_coment === '') {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Please Fill in All the required fields first!",
+                });
+            }
+            else {
+                Swal.fire({
+                    title: "Approve ?",
+                    text: "Are you sure you want to Approve this Request?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#28a745",
+                    cancelButtonColor: "#dc3545",
+                    confirmButtonText: "Yes",
+                    cancelButtonText: "No",
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                url: "@Url.Action("ApproveRequest")",
+                                type: 'POST',
+                                data: {
+                                    id_req: id_req,
+                                    status: status,
+                                    verify_coment: verify_coment
+                                },
+                                success: function (data) {
+                                    // Optionally trigger a button click or any other action here
+                                    // $('button[name=btn_apply]').click();
+
+                                    // Display a success message using SweetAlert
+                                    Swal.fire({
+                                        title: 'Approved!',
+                                        icon: 'success' // Correctly set the icon
+                                    }).then(() => {
+                                        window.location.reload();
+                                    });
+                                },
+                                error: function (xhr, status, error) {
+                                    Swal.fire({
+                                        icon: "error",
+                                        title: "Error",
+                                        text: "An error occurred while processing your request!",
+                                    });
+                                    reject(error);
+                                }
+                            });
+                        });
+                    },
+                });
+            }
+        }
+
+        function btn_decline() {
+            var id_req = $('#id_req').val();
+            var status = 'Declined';
+            var verify_coment = $('#comentaction').val();
+            if (status === '' || verify_coment === '') {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Please Fill in All the required fields first!",
+                });
+            }
+            else {
+                Swal.fire({
+                    title: "Approve ?",
+                    text: "Are you sure you want to Decline this Request?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#28a745",
+                    cancelButtonColor: "#dc3545",
+                    confirmButtonText: "Yes",
+                    cancelButtonText: "No",
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                url: "@Url.Action("ApproveRequest")",
+                                type: 'POST',
+                                data: {
+                                    id_req: id_req,
+                                    status: status,
+                                    verify_coment: verify_coment
+                                },
+                                success: function (data) {
+                                    // Optionally trigger a button click or any other action here
+                                    // $('button[name=btn_apply]').click();
+
+                                    // Display a success message using SweetAlert
+                                    Swal.fire({
+                                        title: 'Declined!',
+                                        icon: 'success' // Correctly set the icon
+                                    }).then(() => {
+                                        window.location.reload();
+                                    });
+                                },
+                                error: function (xhr, status, error) {
+                                    Swal.fire({
+                                        icon: "error",
+                                        title: "Error",
+                                        text: "An error occurred while processing your request!",
+                                    });
+                                    reject(error);
+                                }
+                            });
+                        });
+                    },
+                });
+            }
+        }
+
+        function btn_approve_verify() {
+            var id_req = $('#id_req_verify').val();
+            var status = 'Approved';
+            var verify_coment = $('#comentaction_updated').val();
+
+            console.log('ID Request:', id_req);
+            console.log('Comment:', verify_coment);
+
+            if (!id_req || verify_coment === '') {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Please Fill in All the required fields first!",
+                });
+                return; 
+            }
+
+            Swal.fire({
+                title: "Approve ?",
+                text: "Are you sure you want to Approve this Request?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#28a745",
+                cancelButtonColor: "#dc3545",
+                confirmButtonText: "Yes",
+                cancelButtonText: "No",
+                showLoaderOnConfirm: true,
+                preConfirm: function () {
+                    return new Promise(function (resolve, reject) {
+                        $.ajax({
+                            url: "@Url.Action("ApproveRequest")",
+                            type: 'POST',
+                            data: {
+                                id_req: id_req,
+                                status: status,
+                                verify_coment: verify_coment,
+                                approver: '@User.Identity.Name' 
+                            },
+                            success: function (data) {
+                                Swal.fire({
+                                    title: 'Approved!',
+                                    icon: 'success'
+                                }).then(() => {
+                                    $('#modal_edit_declined').modal('hide'); 
+                                    window.location.reload();
+                                });
+                                resolve(data);
+                            },
+                            error: function (xhr, status, error) {
+                                console.error('AJAX Error:', xhr.responseText); 
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Error",
+                                    text: "An error occurred while processing your request!",
+                                });
+                                reject(error);
+                            }
+                        });
+                    });
+                },
+            });
+        }
+
+        function btn_decline_verify() {
+            var id_req = $('#id_req_verify').val();
+            var status = 'Declined';
+            var verify_coment = $('#comentaction_updated').val();
+            if (status === '' || verify_coment === '') {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Please Fill in All the required fields first!",
+                });
+            }
+            else {
+                Swal.fire({
+                    title: "Approve ?",
+                    text: "Are you sure you want to Decline this Request?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#28a745",
+                    cancelButtonColor: "#dc3545",
+                    confirmButtonText: "Yes",
+                    cancelButtonText: "No",
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                url: "@Url.Action("ApproveRequest")",
+                                type: 'POST',
+                                data: {
+                                    id_req: id_req,
+                                    status: status,
+                                    verify_coment: verify_coment
+                                },
+                                success: function (data) {
+                                    // Optionally trigger a button click or any other action here
+                                    // $('button[name=btn_apply]').click();
+
+                                    // Display a success message using SweetAlert
+                                    Swal.fire({
+                                        title: 'Declined!',
+                                        icon: 'success' // Correctly set the icon
+                                    }).then(() => {
+                                        window.location.reload();
+                                    });
+                                },
+                                error: function (xhr, status, error) {
+                                    Swal.fire({
+                                        icon: "error",
+                                        title: "Error",
+                                        text: "An error occurred while processing your request!",
+                                    });
+                                    reject(error);
+                                }
+                            });
+                        });
+                    },
+                });
+            }
+        }
+        function btn_decline_verify() {
+            var id_req = $('#id_req_verify').val(); 
+            var status = 'Declined';
+            var verify_coment = $('#comentaction_updated').val();
+
+            console.log('ID Request:', id_req);
+            console.log('Comment:', verify_coment);
+
+            if (!id_req || verify_coment === '') {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Please Fill in All the required fields first!",
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: "Decline ?",
+                text: "Are you sure you want to Decline this Request?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#dc3545",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Yes",
+                cancelButtonText: "No",
+                showLoaderOnConfirm: true,
+                preConfirm: function () {
+                    return new Promise(function (resolve, reject) {
+                        $.ajax({
+                            url: "@Url.Action("DeclineRequest")", 
+                            type: 'POST',
+                            data: {
+                                id_req: id_req,
+                                status: status,
+                                verify_coment: verify_coment,
+                                approver: '@User.Identity.Name'
+                            },
+                            success: function (data) {
+                                Swal.fire({
+                                    title: 'Declined!',
+                                    icon: 'success'
+                                }).then(() => {
+                                    $('#modal_edit_declined').modal('hide');
+                                    window.location.reload();
+                                });
+                                resolve(data);
+                            },
+                            error: function (xhr, status, error) {
+                                console.error('AJAX Error:', xhr.responseText);
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Error",
+                                    text: "An error occurred while processing your request!",
+                                });
+                                reject(error);
+                            }
+                        });
+                    });
+                },
+            });
+        }
+
+
+    </script>
+}

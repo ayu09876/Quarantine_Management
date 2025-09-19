@@ -1,0 +1,63 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model List<LoginModel>
+
+<table id="tbl_details_filter" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 12px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white" width="5%">No</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="20%">User Name</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="15%">Sesa ID</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="20%">Email</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="10%">Role</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="10%">Level</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="15%">Record Date</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="15%">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int rowNumber = 1;
+        }
+        @if (Model != null && Model.Any())
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td class="align-middle text-center border-right">
+                        @rowNumber
+                    </td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.name))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.sesa_id))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.email))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.roles))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.level))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.record_date))</td>
+                    <td class="align-middle text-center border-right">
+                        <button class="btn btn-warning btn-sm" onclick="btn_update('@item.id', '@item.sesa_id', '@item.name', '@item.email', '@item.level', '@item.roles')">
+                            <i class="fa fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="btn_delete('@item.id')">
+                            <i class="fa fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                rowNumber++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center">No data available</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string DisplayValue(object value)
+    {
+        return value == null || string.IsNullOrEmpty(value.ToString()) ? "<span style='color:red'>NA</span>" : value.ToString();
+    }
+}

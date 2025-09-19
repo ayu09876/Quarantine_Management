@@ -1,0 +1,57 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model List<RemarkModel>
+
+<table id="tbl_details_filter" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 12px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white" width="5%">No</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="30%">Remark</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="25%">Record Date</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="20%">Modify By</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="15%">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int rowNumber = 1;
+        }
+        @if (Model != null && Model.Any())
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td class="align-middle text-center border-right">
+                        @rowNumber
+                    </td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.remark))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.record_date))</td>
+                    <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.modify_by))</td>
+                    <td class="align-middle text-center border-right">
+                        <button class="btn btn-warning btn-sm" onclick="btn_update('@item.id', '@item.remark')">
+                            <i class="fa fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="btn_delete('@item.id')">
+                            <i class="fa fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                rowNumber++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center">No data available</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string DisplayValue(object value)
+    {
+        return value == null || string.IsNullOrEmpty(value.ToString()) ? "<span style='color:red'>NA</span>" : value.ToString();
+    }
+}

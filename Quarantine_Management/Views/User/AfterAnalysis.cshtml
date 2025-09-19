@@ -1,0 +1,564 @@
+﻿@using Quarantine_Management.Function
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    DateTime dt = DateTime.Now;
+    var Month = dt.ToString("MMMM");
+}
+
+<style>
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    #image {
+        transition: transform 0.2s;
+        margin: auto;
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+
+    .modal-dialog {
+        max-width: 110% !important;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .modal {
+        padding-right: 4px !important;
+        padding: .5%;
+    }
+
+    .modal-dialog {
+        max-width: 400px;
+    }
+
+    .modal-header {
+        padding: 10px 15px;
+    }
+
+    .modal-body {
+        padding: 10px 15px;
+    }
+
+</style>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row pt-2">
+            <div class="col-lg-12 mt-2 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex">
+                                <h2 class="text-dark fw-bold"><i class='fa fa-hourglass-end'></i>&nbsp;After</h2>
+                                <h2 class="text-dt fw-bold">&nbsp;Analysis&nbsp;</h2>
+                            </div>
+                            <div>
+                                <button class="btn btn-success btn-sm" onclick="DownlodAfterAnalysis()">
+                                    <i class="fa fa-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date From</label>
+                                <input type="date" id="date_from" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date From" />
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date To</label>
+                                <input type="date" id="date_to" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date To" />
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_apply" name="btn_apply" onclick="applyfilter()" class="btn btn-primary btn-sm btn-block mt-2"><i class="fa fa-search mr-1"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_reset" name="btn_reset" class="btn btn-sm btn-danger btn-block mt-2" onclick="window.location.reload()"><i class="fa fa-history mr-1"></i> </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <div id="spinner_loading" class="text-center mt-2">
+                                    <i class="fas fa-spinner fa-spin fa-lg" style="font-size:30pt;"></i>
+                                </div>
+                                <div class="table-responsive" id="table_details" style="overflow-x: auto; white-space: nowrap; scrollbar-width: thin; scroll-behavior: smooth;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal_detail" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i>Request Details
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_detail"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="show_image" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Image Preview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="enlargedImage" src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3dcd58">
+                <h5 class="text-white">
+                    <i class="fa fa-info-circle mr-2"></i> Picture <span id="test-id"></span>
+                </h5>
+                <input onchange="readimgng(this);" type="file" id="image_ng_upload" name="image_ng_upload" accept=".jpg, .jpeg, .png" hidden />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="imageModalUpdate" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3dcd58">
+                <h5 class="text-white">
+                    <i class="fa fa-info-circle mr-2"></i> Picture <span id="test-id"></span>
+                </h5>
+                <input onchange="readimgng(this);" type="file" id="image_ng_upload" name="image_ng_upload" accept=".jpg, .jpeg, .png" hidden />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        let isSearch = false;
+        var loading = "<div class='text-center'><i class='fa fa-4x fa-spinner fa-spin'></i></div>";
+
+
+        $(document).ready(function () {
+            $.ajax({
+                url: "@Url.Action("GetFilterDate")",
+                type: "POST",
+                success: function (data) {
+                    $('#date_from').val(data[0].date_From);
+                    $('#date_to').val(data[0].date_To);
+                    applyfilter();
+                }
+            });
+
+
+
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+        });
+
+        function applyfilter() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+
+            $("#table_details").html('');
+            var table = $("#table_details");
+            var table1 = $("#tbl_details_filter");
+
+            $.ajax({
+                url: "@Url.Action("GetAfterAnalysisData")",
+                type: "Get",
+                data: {
+                    date_from: date_from,
+                    date_to: date_to
+                },
+                success: function (data) {
+                    table.html(data);
+                    $("#table_details").attr('hidden', false);
+                    $("#table_details #tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": false,
+                        "scrollX": false,
+                        "searching": true,
+                        "lengthChange": true,
+                        "fixedHeader": true,
+                        "initComplete": function (settings, json) {
+                            $("#tbl_details_filter").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");
+                        },
+                    });
+                },
+                complete: function () {
+                    $('#spinner_loading').hide();
+                }
+            });
+        }
+
+        function zoomImage(image) {
+            $("#show_image").modal("show");
+            $("#enlargedImage").attr("src", image);
+        }
+
+
+        $(document).ready(function () {
+            $('#statusFilter').select2({
+                placeholder: 'Select Status',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetStatusFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+        })
+
+        function btn_picture(id) {
+            console.log("Button clicked for ID:", id);
+            $('#imageModal').modal('show');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetImages", "User")",
+                data: { id_req: id },
+                success: function (data) {
+                    console.log("Received data:", data);
+
+                    if (data.items && data.items.length > 0) {
+                        var picture = data.items[0].picture;
+                        console.log("Found picture:", picture);
+                        $("#image").attr("src", "../images/upload/" + picture);
+                        $("#image-filename").text(picture);
+                        $("#req_id").html(id);
+                    } else {
+                        console.log("No images found in data");
+                        $("#image").attr("src", "");
+                        $("#image-filename").text("No image found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching image:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert("Error loading image. Check console for details.");
+                }
+            });
+        }
+
+        function picture(id) {
+            console.log("Button clicked for ID:", id);
+            $('#imageModalUpdate').modal('show');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetImages", "User")",
+                data: { id_req: id },
+                success: function (data) {
+                    console.log("Received data:", data);
+
+                    if (data.items && data.items.length > 0) {
+                        var picture = data.items[0].picture;
+                        console.log("Found picture:", picture);
+                        $("#image").attr("src", "../images/upload/" + picture);
+                        $("#image-filename").text(picture);
+                        $("#req_id").html(id);
+                    } else {
+                        console.log("No images found in data");
+                        $("#image").attr("src", "");
+                        $("#image-filename").text("No image found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching image:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert("Error loading image. Check console for details.");
+                }
+            });
+        }
+
+        function detailApproval(id) {
+            $('#modal_detail').modal('show');
+            $('#id_req').val(id);
+            $('#table_detail').html('');
+            $.ajax({
+                url: '@Url.Action("GetDetailDataAfterAnalysis", "User")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_detail').html(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    $('#table_detail').html('<div class="alert alert-danger">Error loading data: ' + error + '</div>');
+                }
+            });
+        }
+        function EditData(id) {
+
+            $('#modal_edit').modal('show');
+            $('#id_req').val(id);
+
+            $('#table_detail_update').html('');
+
+            $.ajax({
+                url: '@Url.Action("GetDetailDataUnderAnalysisUpdate")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_detail_update').html(data);
+                }
+            });
+        }
+
+
+        $(document).ready(function () {
+
+            $('#dispositionUpdate').select2({
+                placeholder: 'Select Disposition',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetDispositionFilter")",
+                    async: true, // Ubah menjadi true untuk performa yang lebih baik
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#destslocUpdate').select2({
+                placeholder: 'Select Destination SLOC',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetSlocFinal")",
+                    async: true, // Ubah menjadi true untuk performa yang lebih baik
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            }).on('change', function () {
+                var selectedSlocId = $(this).val();
+
+                // Jika nilai tidak kosong, ambil dan set FinalStatus secara otomatis
+                if (selectedSlocId) {
+                    $.ajax({
+                        url: "@Url.Action("GetFinalStatusBySloc")",
+                        type: "GET",
+                        data: {
+                            slocId: selectedSlocId
+                        },
+                        success: function (data) {
+                            // Set nilai FinalStatus dan kunci select2
+                            if (data.items && data.items.length > 0) {
+                                // Buat option baru
+                                var newOption = new Option(data.items[0].text, data.items[0].id, true, true);
+                                // Tambahkan ke select2
+                                $('#FinalStatus').append(newOption).trigger('change');
+                                // Disable select2
+                                $('#FinalStatus').prop('disabled', true);
+                            }
+                        }
+                    });
+                } else {
+                    $('#FinalStatus').prop('disabled', false);
+                    $('#FinalStatus').val(null).trigger('change');
+                }
+            });
+
+            $('#FinalStatus').select2({
+                placeholder: 'Select Final Status',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetFinalStatus")",
+                    async: true,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $(function () {
+                $('#datetimepicker1').datetimepicker({
+                    format: 'DD MMMM YYYY',
+                    minDate: new Date()
+                });
+            });
+        })
+        $("#Update_Data").click(function () {
+            var id_req = $('#id_req').val();
+            var disposition = $('#usr_sesa').val();
+            var sloc = $('#destslocUpdate').find(':selected').text();
+            var final_status = $('#FinalStatus').find(':selected').text();
+            var result = $('#resultUpdate').val();
+            if (
+                disposition == "" || sloc == null ||
+                final_status == "" || result == null
+            ) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please Fill in All the requirements first!'
+                });
+            } else {
+                const formData = new FormData();
+                formData.append('id_req', id_req);
+                formData.append('disposition', disposition);
+                formData.append('sloc', sloc);
+                formData.append('final_status', final_status);
+                formData.append('result', result);
+                Swal.fire({
+                    title: 'Update this Request Data?',
+                    text: "Are you sure you want to Update this Request Data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes!',
+                    cancelButtonText: 'No!',
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                type: "POST",
+                                url: "@Url.Action("UpdateRequest", "User")",
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (response) {
+                                    console.log(response); // For debugging
+                                    if (response && response.success === true) {
+                                        Swal.fire({
+                                            title: 'Updated Successfully!',
+                                            text: 'Request Data Updated Successfully!',
+                                            icon: 'success'
+                                        }).then(function () {
+                                            window.location.href = '@Url.Action("AfterAnalysis", "User")';
+                                        });
+                                    } else {
+                                        Swal.fire('Error!', 'Failed to add the data.', 'error');
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error(error);
+                                    Swal.fire('Error!', 'There was an error adding the data.', 'error');
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        });
+
+        function DownlodAfterAnalysis() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+            window.location.href = "@Url.Action("DownlodAfterAnalysis", "Admin")?date_from=" + date_from + "&date_to=" + date_to;
+        }
+
+    </script>
+}

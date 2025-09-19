@@ -1,0 +1,134 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model Quarantine_Management.Models.LoginModel
+@using Microsoft.AspNetCore.Mvc.Rendering;
+@using Microsoft.AspNetCore.Http
+
+@{
+    //ViewData["Title"] = "Login Page";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Quarantine Management</title>
+    <!-- AdminLTE V3 -->
+    <link href="~/Content/adminlte.min.css" rel="stylesheet" />
+    <link href="~/lib/adminlte/plugins/fontawesome-free/css/all.css" rel="stylesheet" />
+    <link href="~/lib/adminlte/plugins/fontawesome-free/css/fontawesome.css" rel="stylesheet" />
+    <link href="~/lib/adminlte/plugins/fontawesome-free/css/solid.css" rel="stylesheet" />
+    <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
+    <link href="~/lib/adminlte/dist/css/adminlte.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg">
+    <div>
+        <div class="container fluid mask mb-3 pb-5">
+            <div class="row mt-5">
+                <div class="bg-success" style="height:30px; opacity:0.5;">
+                </div>
+                <div class="bg-success" style="height:30px;">
+                </div>
+
+            </div>
+            <div class="row align-items-center justify-content-center p-2">
+
+                <div class="col-6 mt-5">
+                    <div class="">
+                        <div class="text-success">
+                            <h1 style="font-size:50pt;"><i class="fas fa-chart-area"></i></h1>
+                        </div>
+                        <h1 class="text-success"><b>Quarantine Management</b></h1>
+                        <h5>GSC EA | Digital & Analytics</h5>
+
+                        <div class="mt-5">
+                            <p>version 1.0</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="col-4 ">
+                    <div class="align-items-center">
+                        <p class="login-box-msg text-dark">@ViewData["Message"]</p>
+                        @using (Html.BeginForm("Index", "Login", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            <p>SESA ID <span class="text-danger">*</span></p>
+                            <div class="input-group mb-3">
+                                @Html.EditorFor(model => model.sesa_id, new { htmlAttributes = new { @class = "form-control", Required = true } })
+
+                                <div class="input-group-append">
+                                    <span class="fa fa-user input-group-text bg-success"></span>
+                                </div>
+                            </div>
+                            <p>Password <span class="text-danger">*</span></p>
+                            <div class="input-group mb-3">
+                                @Html.EditorFor(model => model.password, new { htmlAttributes = new { @Type = "password", @class = "form-control", Required = true } })
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-success"><i class="fas fa-lock"></i></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 mt-3">
+                                    <button type="submit" name="submit" class="btn btn-success btn-block btn-flat rounded"><i class="fas fa-sign-in-alt"></i> Login</button>
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                @* <div class="col-12 mt-3 ">
+                            <span>Don't have account ? </span><a class="text-success" href="#"> <b><u>Sign Up</u></b></a>
+                            </div>*@
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="container-fluid p-2">
+        <div class="row">
+            <div class="col-12 d-flex align-items-center">
+                <div class="ml-5 col-sm-9">
+                    <div class="text-white mt-2" style="font-size:10pt;">
+                        <ul style="list-style-type:none;">
+                            <li>&copy;2025 - GSC EA |  Digital & Analytics</li>
+                            <li>Perusahaan XYZ</li>
+                        </ul>
+                    </div>
+                </div>
+                @* <div class="ml-auto col-sm-3">
+                    <img src="~/images/logo/se-lio.png" class="d-inline-block align-text-top" style="max-width:60%;" />
+                </div> *@
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.js"></script>
+
+    <style>
+
+        .bg-mask {
+            background-color: #000000;
+        }
+
+        .bg {
+            background: url('@Url.Content("~/images/background/background.jpg")');
+            width: 100%;
+            background-size: cover;
+            /*opacity: 0.5;*/
+        }
+
+        .mask {
+            background: rgba(255, 255, 255, 0.83);
+            border-radius: 2px;
+        }
+
+    </style>
+</body>
+</html>

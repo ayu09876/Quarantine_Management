@@ -1,0 +1,90 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model List<RequestModel>
+
+
+<style>
+    .status-finish-analysis {
+        background-color: #B5FCCD;
+    }
+
+    .status-after-analysis {
+        background-color: #AFDDFF;
+    }
+
+    .status-under-analysis {
+        background-color: #FFD63A;
+    }
+
+    .status-waiting-analysis {
+        background-color: #FAD59A;
+    }
+
+    .status-waiting-approval {
+        background-color: #F8F8E1;
+    }
+
+    .status-declined {
+        background-color: #FF6363;
+    }
+</style>
+
+<table id="tbl_details_filter" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 11px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white">Request ID</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Requestor</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Reference</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Quantity</th>
+            <th class="font-calibri border-right align-middle text-center text-white">PIC</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Remark</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Picture</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Request Date</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Status</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (RequestModel item in Model)
+        {
+            string statusClass = item.status switch
+            {
+                "Finish Analysis" => "status-finish-analysis",
+                "After Analysis" => "status-after-analysis",
+                "Under Analysis" => "status-under-analysis",
+                "Waiting Analysis" => "status-waiting-analysis",
+                "Waiting Approval" => "status-waiting-approval",
+                "Declined" => "status-declined",
+                _ => ""
+            };
+            <tr>
+                <td class="align-middle text-center border-right" style="font-weight:bold">@Html.Raw(DisplayValue(item.req_id))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.requestor))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.reference))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.quantity))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.pic))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.remark))</td>
+                <td class="align-middle text-center border-right">
+                    <button class="btn btn-danger mb-1 mt-1" style="width:2rem; padding:0.25rem;" onclick="btn_picture('@item.id_req')">
+                        <i class="fa fa-camera"></i>
+                    </button>
+                </td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.request_date))</td>
+                <td class="align-middle text-center border-right @statusClass">@Html.Raw(DisplayValue(item.status))</td>
+                <td class="align-middle text-center border-right">
+                    <button class="btn btn-info mb-1 mt-1" style="width:2rem; padding:0.25rem;" onclick="detail_data(`@item.id_req`)">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string DisplayValue(object value)
+    {
+        return value == null || string.IsNullOrEmpty(value.ToString()) ? "<span style='color:red'>NA</span>" : value.ToString();
+    }
+}

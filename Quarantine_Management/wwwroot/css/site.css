@@ -1,0 +1,345 @@
+﻿/* Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
+for details on configuring this project to bundle and minify static web assets. */
+
+nav ul {
+    list-style-type: none;
+}
+nav ul li{
+    display:inline-block;
+   
+}
+ul li a {
+    text-decoration: none;
+}
+
+.navbar .active {
+    background-color: #006400; /* Dark green background */
+    color: white; /* White text for contrast */
+    border-radius: 10px; /* Rounded corners */
+    padding: 2px 2px; /* Padding for better spacing */
+    transition: background-color 0.3s ease; /* Smooth transition */
+}
+
+.modal {
+    overflow: auto !important;
+    scrollbar-width: none;
+}
+
+/* Dropdown button */
+.mynav_dropdown .mynav_dropbtn {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: white;
+    background-color: inherit;
+    font-family: inherit;
+}
+/*.mynav_dropdown a {
+    margin-left: 450px;
+}*/
+/* Dropdown content (hidden by default) */
+.mynav_dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    z-index: 1;
+}
+
+    /* Links inside the dropdown */
+    .mynav_dropdown-content a {
+        float: none;
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+    }
+
+        /* Add a grey background color to dropdown links on hover */
+        .mynav_dropdown-content a:hover {
+            background-color: #3dcd58;
+        }
+
+/* Show the dropdown menu on hover */
+.mynav_dropdown:hover .mynav_dropdown-content {
+    display: block;
+}
+
+.bg-dt {
+    background-color: #3dcd58 !important;
+    color: #fff !important;
+}
+.bg-home {
+    background: black;
+}
+.bg-orange {
+    background-color: #e47f00 !important;
+}
+
+.bg-plum {
+    background-color: #c32b87 !important;
+}
+.text-dt {
+    color: #3dcd58 !important;
+}
+.text-dark {
+    color: black !important;
+}
+
+.tags2 a {
+    display: inline-block;
+    height: 24px;
+    line-height: 23px;
+    position: relative;
+    margin: 0 12px 0px 0;
+    padding: 0 12px 0 10px;
+    background: #777;
+    -moz-border-radius-bottomleft: 5px;
+    -webkit-border-bottom-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    color: #fff;
+    font-size: 12px;
+    font-family: "Lucida Grande","Lucida Sans Unicode",Verdana,sans-serif;
+    text-decoration: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    font-weight: bold;
+}
+
+.tags a:hover, .tags2:hover {
+    cursor: pointer !important;
+}
+
+.tags a {
+    display: inline-block;
+    height: 24px;
+    line-height: 23px;
+    position: relative;
+    margin: 0 12px 0px 0;
+    padding: 0 12px 0 10px;
+    background: #777;
+    -moz-border-radius-bottomleft: 5px;
+    -webkit-border-bottom-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    -webkit-border-top-left-radius: 5px;
+    border-top-left-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    color: #fff;
+    font-size: 12px;
+    font-family: "Lucida Grande","Lucida Sans Unicode",Verdana,sans-serif;
+    text-decoration: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    font-weight: bold;
+}
+
+    .tags a::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        right: 1px;
+        float: left;
+        width: 5px;
+        height: 5px;
+        -moz-border-radius: 50%;
+        -webkit-border-radius: 50%;
+        border-radius: 50%;
+        background: #fff;
+        -moz-box-shadow: -1px -1px 2px rgba(0,0,0,0.4);
+        -webkit-box-shadow: -1px -1px 2px rgba(0,0,0,0.4);
+        box-shadow: -1px -1px 2px rgba(0,0,0,0.4);
+    }
+
+    .tags a:after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: -12px;
+        width: 0;
+        height: 0;
+        border-color: transparent transparent transparent #777;
+        border-style: solid;
+        border-width: 12px 0 12px 12px;
+    }
+
+.tags2 a.color1 {
+    background: #f58220;
+}
+
+.tags a.color1 {
+    background: #f58220;
+}
+
+    .tags a.color1:after {
+        border-color: transparent transparent transparent #f58220
+    }
+
+.tags a.color2 {
+    background: #97c224;
+}
+
+    .tags a.color2:after {
+        border-color: transparent transparent transparent #97c224
+    }
+
+.tags a.color3 {
+    background: #de3f3e;
+}
+
+    .tags a.color3:after {
+        border-color: transparent transparent transparent #de3f3e
+    }
+
+.tags a.color4 {
+    background: #ec008c;
+}
+
+    .tags a.color4:after {
+        border-color: transparent transparent transparent #ec008c
+    }
+
+.tags a.color5 {
+    background: #00a6df;
+}
+
+    .tags a.color5:after {
+        border-color: transparent transparent transparent #00a6df
+    }
+
+.tags a.color6 {
+    background: #004adf;
+}
+
+    .tags a.color6:after {
+        border-color: transparent transparent transparent #004adf
+    }
+
+.tags a:hover {
+    background: #97c224 !important;
+    color: #fff;
+}
+
+.tags a:hover:after {
+        border-color: transparent transparent transparent #97c224 !important
+    }
+
+
+
+
+.btn-primary {
+  color: #fff;
+  background-color: #1b6ec2;
+  border-color: #1861ac;
+}
+
+
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  font-size: 14px;
+}
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.border-top {
+  border-top: 1px solid #e5e5e5;
+}
+.border-bottom {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.box-shadow {
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
+
+button.accept-policy {
+  font-size: 1rem;
+  line-height: inherit;
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  white-space: nowrap;
+  line-height: 60px; /* Vertically center the text there */
+}
+.button {
+    padding: 15px 25px;
+    font-size: 24px;
+    text-align: center;
+    cursor: pointer;
+    outline: none;
+    color: #fff;
+    background-color: #04AA6D;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 9px #999;
+}
+
+.button:hover {
+    background-color: #3e8e41
+}
+
+.button:active {
+    background-color: #3e8e41;
+    box-shadow: 0 5px #666;
+    transform: translateY(4px);
+}
+
+.strip {
+    flex-direction: column;
+    display: flex;
+    flex: 0 0 100%;
+    z-index: 2;
+    background-color: #3dcd58;
+    height: 40px;
+}
+
+.strip-light {
+    flex-direction: column;
+    display: flex;
+    flex: 0 0 100%;
+    z-index: 2;
+    background-color: #3dcd58;
+    height: 40px;
+    opacity: 0.5;
+}
+
+.loginpage {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    justify-content: center;
+}
+
+@media only screen and(max-width: 800px) {
+    nav ul {
+        position: absolute;
+        top: 70px;
+        left: 0;
+        backround: #3dcd58;
+        width: 100%;
+        overflow: hidden;
+        transition: max-height 0.5s;
+    }

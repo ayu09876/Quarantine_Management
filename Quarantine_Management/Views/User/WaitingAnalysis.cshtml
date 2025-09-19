@@ -1,0 +1,653 @@
+﻿@using Quarantine_Management.Function
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    DateTime dt = DateTime.Now;
+    var Month = dt.ToString("MMMM");
+}
+
+<style>
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    #image {
+        transition: transform 0.2s;
+        margin: auto;
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+
+    .modal-dialog {
+        max-width: 110% !important;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .modal {
+        padding-right: 4px !important;
+        padding: .5%;
+    }
+
+    .modal-dialog {
+        max-width: 400px;
+    }
+
+    .modal-header {
+        padding: 10px 15px;
+    }
+
+    .modal-body {
+        padding: 10px 15px;
+    }
+
+</style>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row pt-2">
+            <div class="col-lg-12 mt-2 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex">
+                                <h2 class="text-dark fw-bold"><i class='fa fa-hourglass-start'></i>&nbsp;Waiting </h2>
+                                <h2 class="text-dt fw-bold">&nbsp;Analysis&nbsp;</h2>
+                             </div>
+                            <div>
+                                <button class="btn btn-success btn-sm" onclick="DownlodWaitingAnalysis()">
+                                    <i class="fa fa-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date From</label>
+                                <input type="date" id="date_from" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date From" />
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date To</label>
+                                <input type="date" id="date_to" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date To" />
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_apply" name="btn_apply" onclick="applyfilter()" class="btn btn-primary btn-sm btn-block mt-2"><i class="fa fa-search mr-1"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_reset" name="btn_reset" class="btn btn-sm btn-danger btn-block mt-2" onclick="window.location.reload()"><i class="fa fa-history mr-1"></i> </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <div id="spinner_loading" class="text-center mt-2">
+                                    <i class="fas fa-spinner fa-spin fa-lg" style="font-size:30pt;"></i>
+                                </div>
+                                <div class="table-responsive" id="table_details" style="overflow-x: auto; white-space: nowrap; scrollbar-width: thin; scroll-behavior: smooth;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="text-white"><i class="fa fa-info-circle mr-2"></i> Picture <span id="req_id"></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%; display: block; margin: 0 auto;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal_detail" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i>Request Details
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_detail"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div id="modal_edit" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i> Waiting Approval
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row ml-2 mr-2">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label style="font-size:10pt; font-weight:bold;">Request ID</label>
+                            <input type="text" id="req_idEdit" class="form-control form-control-sm" disabled />
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label style="font-size:10pt; font-weight:bold;">Requestor</label>
+                            <input type="text" id="justshowusername" value='@HttpContextAccessor.HttpContext.Session.GetString("name")' class="form-control form-control-sm" disabled />
+                            <input type="text" id="usr_sesa" value='@HttpContextAccessor.HttpContext.Session.GetString("sesa_id")' class="form-control form-control-sm" disabled hidden />
+                        </div>
+                    </div>
+
+                    <!-- Main Form Content -->
+                    <div class="col-12">
+                        <div class="card card-outline" id="scan">
+                            <div class="card-body">
+                                <!-- Header Part Information -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h5 class="text-dark">
+                                            <i class="fa fa-info-circle mr-2 text-success"></i>Part Information
+                                        </h5>
+                                    </div>
+                                </div>
+
+                                <!-- Form fields -->
+                                <div class="row">
+                                    <!-- Part ID and Rack ID -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Reference<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="referenceEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label>Rack<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="rackEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label>Row<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="rowEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label>Column<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="columnEdit"></select>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Box Type<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="boxtypedEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Quantity<span class="text-danger">*</span></label>
+                                            <input class="form-control" type="number" id="quantityEdit" placeholder="Input Quantity" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>PIC<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="PICEdit" onchange="disDeptCheck(this);"></select>
+                                        </div>
+                                    </div>
+                                    <!-- Maximum Stay, Part Type, and PPAP -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Maximum Stay<span class="text-danger">*</span></label>
+                                            <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                                                <input type="text" class="form-control datetimepicker-input" id="max_agingEdit" data-target="#datetimepicker1" placeholder="Input Maximum Stay" />
+                                                <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Remark<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="remarkEdit" onchange="disDeptCheck(this);"></select>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label id="ppapLabel">PPAP</label>
+                                            <input type="text" id="ppapEdit" class="form-control" placeholder="Input PPAP" disabled />
+                                        </div>
+                                    </div>
+
+                                    <!-- Issue Information -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Source Issue<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="issuesourceEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Issue Category<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="issuecategoryEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Issue Detail<span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="issuedescEdit" rows="3" placeholder="Input Issue Detail"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <hr>
+                                        <h5 class="text-dark">
+                                            <i class="fa fa-camera mr-2 text-success mb-3"></i>Rack-Finding Picture
+                                        </h5>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-group">
+                                            <div class="mr-5 d-flex text-center align-items-center justify-content-center">
+                                                <div id="file_section">
+                                                    <input onchange="readimgadd(this);" type="file" name="file" accept=".jpg, .bmp, .png, .jfif" id="actual-btn" hidden />
+                                                    <label for="actual-btn" class="actual-btn btn-info">Choose file</label><br />
+                                                    <span id="file-chosen" style="width:100%;">No File Chosen</span>
+                                                    <button id="reset-btn" class="btn btn-sm btn-danger text-white" style="display: none;">Hapus</button>
+                                                    </br>
+                                                    <label style="font-size: 6pt">Make sure the image that will be uploaded<br />has size less than 1 MB.</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-group">
+                                            <div class="ml-5 d-flex text-center align-items-center justify-content-center">
+                                                <div id="file_section111">
+                                                    <button name="btn_ng_take" id="btn_ng_take" hidden></button>
+                                                    <label for="btn_ng_take" class="actual-btn btn-info">Take A Picture</label><br />
+                                                    <span id="picture-taken" style="width:100%;">No Picture Taken</span>
+                                                    <button id="reset-taken" class="btn btn-sm btn-danger text-white" style="display: none;">Hapus</button>
+                                                    </br>
+                                                    <label style="font-size: 6pt">Make sure the image that will be taken<br />clear and not blurry.</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <p style="font-size:10pt; font-weight:bold;" class="text-center">Preview</p>
+                                            <div class="d-flex text-center align-items-center justify-content-center">
+                                                <img id="img-preview" src="~/assets/CameraNG.png" alt="Picture Before" style="width:5rem; height:5rem; object-fit:cover;" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Proposed SAP Movement Section -->
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <hr>
+                                        <h5 class="text-dark">
+                                            <i class="fa fa-info-circle mr-2 text-success mb-3"></i>Proposed SAP Movement
+                                        </h5>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Disposition<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="dispositionEdit"></select>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Source Sloc<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="source_slocEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Destination Sloc<span class="text-danger">*</span></label>
+                                            <select class="form-control" id="dest_slocEdit"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <hr>
+                                        <h5 class="text-dark">
+                                            <i class="fa fa-info-circle mr-2 text-success mb-3"></i>Coment Action
+                                        </h5>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Coment<span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="ComentEdit" rows="3" placeholder="Input Issue Detail"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-12">
+                    <label style="font-size:12pt;"></label>
+                    <div class="row d-flex justify-content-center">
+                        <div class="col-3 mx-auto">
+                            <button class="btn btn-info btn-block" id="Edit_Data"><i class="fas fa-edit"></i> EDIT </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="show_image" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Image Preview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="enlargedImage" src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3dcd58">
+                <h5 class="text-white">
+                    <i class="fa fa-info-circle mr-2"></i> Picture <span id="test-id"></span>
+                </h5>
+                <input onchange="readimgng(this);" type="file" id="image_ng_upload" name="image_ng_upload" accept=".jpg, .jpeg, .png" hidden />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_take" tabindex="-1" role="dialog" aria-labelledby="modal_take" aria-hidden="true">
+    <div class="modal-lg modal-dialog dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cameraModalLabel">Take NG Picture</h5>
+                <button type="button" class="close closetake" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <div class="frame" style="border: 2px solid #82828282; padding: 10px; height: 450px; display: flex; justify-content: center; align-items: center;">
+                            <h6 style="position: absolute; top: 10px; background: white; padding: 0 10px;">Real-Time Camera</h6>
+                            <video id="video" autoplay playsinline style="width: auto; height: 100%; display: none;"></video>
+                            <div id="cameraPlaceholder" style="width: 100%; height: 100%; background: #eaeaea; display: flex; justify-content: center; align-items: center; border: 1px dashed #ccc;">
+                                <p style="color: #888;">Camera feed will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <div class="frame" style="border: 2px solid #82828282; padding: 10px; height: 450px; display: flex; justify-content: center; align-items: center;">
+                            <h6 style="position: absolute; top: 10px; background: white; padding: 0 10px;">Captured Image</h6>
+                            <canvas id="canvasCaptured" style="display: none; width: auto; height: 100%;"></canvas>
+                            <img id="captured_image" style="width: auto; height: 100%;" />
+                            <div id="canvasPlaceholder" style="width: 100%; height: 100%; background: #eaeaea; display: flex; justify-content: center; align-items: center; border: 1px dashed #ccc;">
+                                <p style="color: #888;">Captured image will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="captureButton" onclick="capturePhoto()">Capture</button>
+                <button type="button" class="btn btn-success" id="saveButton" onclick="savePhoto()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_request_tracking" tabindex="-1" data-backdrop="static" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title"><i class="fas fa-list"></i> Request Tracking</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="body_request_tracking">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_request_tracking" tabindex="-1" data-backdrop="static" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title"><i class="fas fa-list"></i> Request Tracking</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="body_request_tracking">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let isSearch = false;
+        var loading = "<div class='text-center'><i class='fa fa-4x fa-spinner fa-spin'></i></div>";
+
+
+        $(document).ready(function () {
+            $.ajax({
+                url: "@Url.Action("GetFilterDate")",
+                type: "POST",
+                success: function (data) {
+                    $('#date_from').val(data[0].date_From);
+                    $('#date_to').val(data[0].date_To);
+                    applyfilter();
+                }
+            });
+
+
+
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+        });
+
+        function applyfilter() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+
+            $("#table_details").html('');
+            var table = $("#table_details");
+            var table1 = $("#tbl_details_filter");
+
+            $.ajax({
+                url: "@Url.Action("GetWaitingAnalysisData")",
+                type: "Get",
+                data: {
+                    date_from: date_from,
+                    date_to: date_to
+                },
+                success: function (data) {
+                    table.html(data);
+                    $("#table_details").attr('hidden', false);
+                    $("#table_details #tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": false,
+                        "scrollX": false,
+                        "searching": true,
+                        "lengthChange": true,
+                        "fixedHeader": true,
+                        "initComplete": function (settings, json) {
+                            $("#tbl_details_filter").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");
+                        },
+                    });
+                },
+                complete: function () {
+                    $('#spinner_loading').hide();
+                }
+            });
+        }
+
+        function zoomImage(image) {
+            $("#show_image").modal("show");
+            $("#enlargedImage").attr("src", image);
+        }
+
+
+        $(document).ready(function () {
+            $('#statusFilter').select2({
+                placeholder: 'Select Status',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetStatusFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+        })
+
+        function btn_picture(id) {
+            console.log("Button clicked for ID:", id);
+            $('#imageModal').modal('show');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetImages", "User")",
+                data: { id_req: id },
+                success: function (data) {
+                    console.log("Received data:", data);
+
+                    if (data.items && data.items.length > 0) {
+                        var picture = data.items[0].picture;
+                        console.log("Found picture:", picture);
+                        $("#image").attr("src", "../images/upload/" + picture);
+                        $("#image-filename").text(picture);
+                        $("#req_id").html(id);
+                    } else {
+                        console.log("No images found in data");
+                        $("#image").attr("src", "");
+                        $("#image-filename").text("No image found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching image:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert("Error loading image. Check console for details.");
+                }
+            });
+        }
+
+        function detailApproval(id) {
+            $('#modal_detail').modal('show');
+            $('#id_req').val(id);
+            $('#table_detail').html('');
+            $.ajax({
+                url: '@Url.Action("GetDetailDataWaitingAnalysis", "User")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_detail').html(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    $('#table_detail').html('<div class="alert alert-danger">Error loading data: ' + error + '</div>');
+                }
+            });
+        }
+        function DownlodWaitingAnalysis() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+            window.location.href = "@Url.Action("DownlodWaitingAnalysis", "Admin")?date_from=" + date_from + "&date_to=" + date_to;
+        }
+
+    </script>
+}

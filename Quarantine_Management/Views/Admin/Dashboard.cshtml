@@ -1,0 +1,995 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+<style>
+    .modal-dialog {
+        max-width: 110% !important;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .modal {
+        padding-right: 4px !important;
+        padding: .5%;
+    }
+
+    #image {
+        transition: transform 0.2s; /* Smooth scaling effect */
+        margin: auto; /* Center the image horizontally */
+        display: block; /* Make the image a block element to center it */
+        max-width: 100%; /* Make the image width adjustable */
+        height: auto; /* Make the image height adjustable */
+    }
+
+    /* The container */
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+        /* Hide the browser's default radio button */
+        .container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+    /* Create a custom radio button */
+    .checkmark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 25px;
+        width: 25px;
+        background-color: #eee;
+        border-radius: 50%;
+    }
+
+    /* On mouse-over, add a grey background color */
+    .container:hover input ~ .checkmark {
+        background-color: #ccc;
+    }
+
+    /* When the radio button is checked, add a blue background */
+    .container input:checked ~ .checkmark {
+        background-color: #2196F3;
+    }
+
+    /* Create the indicator (the dot/circle - hidden when not checked) */
+    .checkmark:after {
+        content: "";
+        position: absolute;
+        display: none;
+    }
+
+    /* Show the indicator (dot/circle) when checked */
+    .container input:checked ~ .checkmark:after {
+        display: block;
+    }
+
+    #detail, #detail2 {
+        width: 100%;
+        height: 70px;
+    }
+
+    /* Style the indicator (dot/circle) */
+    .container .checkmark:after {
+        top: 9px;
+        left: 9px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: white;
+    }
+
+    #modal_layer {
+        overflow-y: scroll;
+    }
+
+    /* Green */
+    .success {
+        border: 3px solid;
+        border-color: #04AA6D;
+        color: green;
+    }
+
+    .clicked_success {
+        background-color: #04AA6D;
+        color: white;
+    }
+
+    .success:hover {
+        background-color: #04AA6D;
+        color: white;
+    }
+
+    /* Blue */
+    .info {
+        border-color: #2196F3;
+        color: dodgerblue;
+    }
+
+    /* Orange */
+    .warning {
+        border: 3px solid;
+        border-color: #ff9800;
+        color: orange;
+    }
+
+    .clicked_warning {
+        background-color: #ff9800;
+        color: white;
+    }
+
+    .warning:hover {
+        background: #ff9800;
+        color: white;
+    }
+
+    /* Red */
+    .danger {
+        border: 3px solid;
+        border-color: #f44336;
+        color: red;
+    }
+
+    .clicked_danger {
+        background: #f44336;
+        color: white;
+    }
+
+    .danger:hover {
+        background: #f44336;
+        color: white;
+    }
+
+    label.actual-btn {
+        display: inline-block;
+        background-color: #3dcd58;
+        color: white;
+        padding: 0.5rem;
+        font-family: sans-serif;
+        border-radius: 0.3rem;
+        cursor: pointer;
+        width: 100px;
+        height: 30px;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    #file-chosen {
+        margin-left: 0.3rem;
+        font-family: sans-serif;
+    }
+
+    label.actual-btnn {
+        display: inline-block;
+        background-color: #3dcd58;
+        color: white;
+        padding: 0.5rem;
+        font-family: sans-serif;
+        border-radius: 0.3rem;
+        cursor: pointer;
+        width: 100px;
+        height: 30px;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    #file-chosenn {
+        margin-left: 0.3rem;
+        font-family: sans-serif;
+    }
+</style>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row pt-2">
+            <div class="col-lg-12 mt-2 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-start align-items-center w-100" style="max-width: 350px !important;">
+                            <h2 class="text-dark fw-bold"><i class='fa fa-chart-bar'></i> </h2>
+                            <h2 class="text-dt fw-bold">&nbsp;Dashboard&nbsp;</h2>
+                        </div>
+
+                        <div class="row mt-3 justify-content-center">
+                            <div class="col-lg-4 col-md-4 col-sm-4">
+                                <div class="small-box bg-info" style="cursor:pointer" onclick="list_request()">
+                                    <div class="inner">
+                                        <p>Total Requests</p>
+                                        <h3><span id="total_requests"></span></h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-4">
+                                <div class="small-box bg-success" style="cursor:pointer" onclick="list_part()">
+                                    <div class="inner">
+                                        <p>Total Part Number</p>
+                                        <h3><span id="part_number"></span></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-4 md-12">
+                                <div class="card p-2">
+                                    <h5 id="text_request" class="text-center font-weight-bold"></h5>
+                                    <div id="load_request"></div>
+                                    <div id="chart_request" style="width:100%;min-height:500px; height: 500px; max-height:500px;justify-content:center;align-items:center;"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-8 md-12">
+                                <div class="card p-2">
+                                    <h5 id="text_part" class="text-center font-weight-bold"></h5>
+                                    <div id="load_part"></div>
+                                    <div id="chart_part" style="width:100%;min-height:500px; height: 500px; max-height:500px;justify-content:center;align-items:center;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row 2 -->
+                        <div class="row mt-3">
+                            <div class="col-6 md-12">
+                                <div class="card p-2">
+                                    <h5 id="text_issue" class="text-center font-weight-bold"></h5>
+                                    <div id="load_issue"></div>
+                                    <div id="chart_issue" style="width:100%;min-height:500px; height: 500px; max-height:500px;justify-content:center;align-items:center;"></div>
+                                </div>
+                            </div>
+                            <div class="col-6 md-12">
+                                <div class="card p-2">
+                                    <h5 id="text_requestor" class="text-center font-weight-bold"></h5>
+                                    <div id="load_requestor"></div>
+                                    <div id="chart_requestor" style="width:100%;min-height:500px; height: 500px; max-height:500px;justify-content:center;align-items:center;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal_detail" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i><span id="detail_title"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_detail"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/adminlte/plugins/chart.js/Chart.min.js"></script>
+    <script src="~/lib/adminlte/plugins/chart.js/chartjs-plugin-datalabels@1.1.2.js"></script>
+    <script>
+        var loading = "<div class='text-center'><i class='fa fa-4x fa-spinner fa-spin'></i></div>";
+
+        $(document).ready(function () {
+            // Definisi loading indicator
+            var loading = '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div>';
+
+            // Add loading indicators
+            $('#load_part').html(loading);
+            $('#load_request').html(loading);
+            $('#load_requestor').html(loading);
+            $('#load_issue').html(loading);
+
+            // Load Final Status Chart
+            $.ajax({
+                url: "@Url.Action("GetChartFinalStatus")",
+                type: "GET",
+                success: function (data) {
+                    console.log('Final Status Data:', data);
+                    $('#total_requests').html(data.total_request);
+                    $('#part_number').html(data.part_number);
+                    requestChart(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error in GetChartFinalStatus:', error);
+                }
+            });
+
+            // Load Requestor Chart
+            $.ajax({
+                url: "@Url.Action("GetChartRequestor")",
+                type: "GET",
+                success: function (data) {
+                    console.log('Requestor Data:', data);
+                    requestorChart(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error in GetChartRequestor:', error);
+                }
+            });
+
+            // Load Source Issue Chart
+            $.ajax({
+                url: "@Url.Action("GetChartSourceIssue")",
+                type: "GET",
+                success: function (data) {
+                    console.log('Source Issue Data:', data);
+                    issueChart(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error in GetChartSourceIssue:', error);
+                }
+            });
+
+            // Load Part Number Chart
+            $.ajax({
+                url: "@Url.Action("GetChartPartNumber")",
+                type: "GET",
+                success: function (data) {
+                    console.log('Part Number Data:', data);
+                    if (!data || (Array.isArray(data) && data.length === 0)) {
+                        console.warn('Data part number kosong');
+                        $('#chart_part').html('<div class="alert alert-warning">Data tidak tersedia</div>');
+                        $('#load_part').hide();
+                    } else {
+                        partChart(data);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error in GetChartPartNumber:', error);
+                    $('#chart_part').html('<div class="alert alert-danger">Gagal memuat data</div>');
+                    $('#load_part').hide();
+                }
+            });
+        });
+
+        function requestChart(data) {
+            $('#load_request').hide();
+            $('#text_request').show();
+
+            // Prepare dynamic data for Highcharts based on final status
+            const seriesData = [
+                { name: 'Back to Production', y: data.back_to_production },
+                { name: 'Scrap', y: data.scrap },
+                { name: 'Send to BLP', y: data.send_to_blp },
+                { name: 'Send to Supplier', y: data.send_to_supplier }
+            ];
+
+            // Define custom colors for each status
+            const colors = [
+                '#4285F4',  // Blue for Back to Production
+                '#DB4437',  // Red for Scrap
+                '#F4B400',  // Yellow for Send to BLP
+                '#0F9D58'   // Green for Send to Supplier
+            ];
+
+            Highcharts.chart('chart_request', {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie'
+                },
+                title: {
+                    text: 'Final Status of Quarantine Requests',
+                    style: {
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        color: '#333333'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                tooltip: {
+                    pointFormat: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)<br/>',
+                    shared: true,
+                    useHTML: true,
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        colors: colors,
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b><br>{point.y} ({point.percentage:.1f}%)',
+                            distance: -50,
+                            filter: {
+                                property: 'percentage',
+                                operator: '>',
+                                value: 4
+                            }
+                        },
+                        events: {
+                            click: function (event) {
+                                var finalStatus = event.point.name;
+                                console.log(finalStatus);
+                                // Call your custom function here
+                                GetChartRequestDetail(finalStatus);
+                            }
+                        },
+                        showInLegend: true
+                    }
+                },
+                series: [{
+                    name: 'Final Status',
+                    colorByPoint: true,
+                    data: seriesData
+                }]
+            });
+        }
+
+        // Function to get chart details based on final status
+        function GetChartRequestDetail(finalStatus) {
+            $.ajax({
+                url: "@Url.Action("GetChartFinalStatusRequestDetail")",
+                type: "GET",
+                data: { finalStatus: finalStatus },
+                success: function (data) {
+                    console.log(data)
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('Request List - ' + finalStatus);
+                    $("#tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": true,
+                        "lengthChange": true,
+                        "scrollX": false,
+                        "fixedHeader": false
+                    });
+                    $('#modal_detail').modal('show');
+                }
+            });
+        }
+
+        function issueChart(data) {
+            $('#load_issue').hide();
+            $('#text_issue').hide();
+            // Prepare dynamic data for Highcharts
+            const seriesData = [];
+            const categories = [];
+
+            // Process the returned data
+            data.forEach(item => {
+                categories.push(item.source_issue); // Add rack identifiers as categories
+                seriesData.push(item.total); // Each series has one data point
+            });
+
+            Highcharts.chart('chart_issue', {
+                chart: {
+                    type: 'column', // Change to vertical bar chart
+                    plotBackgroundColor: '#ffffff', // White plot background
+                    plotBorderColor: '#cccccc', // Light border color
+                    plotBorderWidth: 1
+                },
+                title: {
+                    text: 'Source of Quarantine Issue',
+                    style: {
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        color: '#333333'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    categories: categories, // Single category to align with series
+                    title: {
+                        text: 'Source Issue', // Change title to Status
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labels: {
+                        rotation: 0,
+                        formatter: function () {
+                            var value = this.value;
+                            var words = value.split(' ');
+                            var maxWordsPerLine = 3; // Maximum number of words per line
+                            var result = [];
+                            for (var i = 0; i < words.length; i += maxWordsPerLine) {
+                                result.push(words.slice(i, i + maxWordsPerLine).join(' '));
+                            }
+                            return result.join('<br/>');
+                        },
+                        style: {
+                            color: (Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color) || 'gray'
+                        }
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Total Requests', // Change title to Total
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labels: {
+                        overflow: 'justify',
+                        style: {
+                            fontWeight: 'bold',
+                            color: (Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color) || 'gray'
+                        }
+                    },
+                },
+                tooltip: {
+                    pointFormat: '<b>{series.name}: {point.y}</b><br/>',
+                    shared: true,
+                    useHTML: true,
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                plotOptions: {
+                    column: {
+                        dataLabels: {
+                            enabled: true,
+                            style: {
+                                color: '#000000'
+                            }
+                        },
+                        cursor: 'pointer',
+                        borderRadius: 7, // Add border radius to bars
+                        pointWidth: 30,
+                        events: {
+                            click: function (event) {
+                                var source_issue = event.point.category;
+                                // Call your custom function here
+                                GetChartSourceIssueDetail(source_issue);
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Total Requests',
+                    data: seriesData.map((total, index) => ({
+                        y: total,
+                        color: Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length] // Use default colors
+                    }))
+                }]
+            });
+        }
+
+        function GetChartSourceIssueDetail(source_issue) {
+            $.ajax({
+                url: "@Url.Action("GetChartSourceIssueDetail")",
+                type: "GET",
+                data: { source_issue: source_issue },
+                success: function (data) {
+                    console.log(data)
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('Request List - ' + source_issue);
+                    $("#tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": true,
+                        "lengthChange": true,
+                        "scrollX": false,
+                        "fixedHeader": false
+                    });
+                    $('#modal_detail').modal('show');
+                }
+            });
+        }
+
+        function requestorChart(data) {
+            $('#load_requestor').hide();
+            $('#text_requestor').show();
+
+            // Prepare dynamic data for Highcharts
+            const seriesData = [];
+            const categories = [];
+
+            // Process the returned data
+            data.forEach(item => {
+                categories.push(item.requestor); // Add requestor names as categories
+                seriesData.push(item.total); // Each series has one data point
+            });
+
+            Highcharts.chart('chart_requestor', {
+                chart: {
+                    type: 'column', // Column chart type
+                    plotBackgroundColor: '#ffffff', // White plot background
+                    plotBorderColor: '#cccccc', // Light border color
+                    plotBorderWidth: 1
+                },
+                title: {
+                    text: 'Requests by Requestor',
+                    style: {
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        color: '#333333'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    categories: categories,
+                    title: {
+                        text: 'Requestor',
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labels: {
+                        rotation: 0,
+                        formatter: function () {
+                            var value = this.value;
+                            var words = value.split(' ');
+                            var maxWordsPerLine = 3; // Maximum number of words per line
+                            var result = [];
+                            for (var i = 0; i < words.length; i += maxWordsPerLine) {
+                                result.push(words.slice(i, i + maxWordsPerLine).join(' '));
+                            }
+                            return result.join('<br/>');
+                        },
+                        style: {
+                            color: (Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color) || 'gray'
+                        }
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Total Requests',
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labels: {
+                        overflow: 'justify',
+                        style: {
+                            fontWeight: 'bold',
+                            color: (Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color) || 'gray'
+                        }
+                    }
+                },
+                tooltip: {
+                    pointFormat: '<b>{series.name}: {point.y}</b><br/>',
+                    shared: true,
+                    useHTML: true,
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                plotOptions: {
+                    column: {
+                        dataLabels: {
+                            enabled: true,
+                            style: {
+                                color: '#000000'
+                            }
+                        },
+                        cursor: 'pointer',
+                        borderRadius: 7, // Add border radius to bars
+                        pointWidth: 30,
+                        events: {
+                            click: function (event) {
+                                var requestor = event.point.category;
+                                console.log("Clicked requestor:", requestor);
+                                // Call function to get details
+                                GetChartRequestorDetail(requestor);
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Total Requests',
+                    data: seriesData.map((total, index) => ({
+                        y: total,
+                        color: Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length] // Use default colors
+                    }))
+                }]
+            });
+        }
+
+        // Function to get details for requestor chart
+        function GetChartRequestorDetail(requestor) {
+            $.ajax({
+                url: "@Url.Action("GetChartRequestDetail")",
+                type: "GET",
+                data: { requestor: requestor },
+                success: function (data) {
+                    console.log(data);
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('Request List - ' + requestor);
+                    $("#tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": true,
+                        "lengthChange": true,
+                        "scrollX": false,
+                        "fixedHeader": false
+                    });
+                    $('#modal_detail').modal('show');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching requestor details:', error);
+                }
+            });
+        }
+
+        function partChart(data) {
+            $('#load_part').hide();
+            $('#text_part').hide();
+
+            // Validasi data terlebih dahulu
+            if (!data || data.length === 0) {
+                console.error('Data untuk part chart kosong atau tidak valid');
+                $('#chart_part').html('<div class="alert alert-warning">Data tidak tersedia</div>');
+                return;
+            }
+
+            console.log('Part Chart Data:', data); // Debugging
+
+            // Prepare dynamic data for Highcharts
+            const seriesData = [];
+            const categories = [];
+
+            // Process the returned data - pastikan data adalah array
+            // Jika data bukan array, ubah menjadi array dengan satu item
+            const dataArray = Array.isArray(data) ? data : [data];
+
+            dataArray.forEach(item => {
+                categories.push(item.reference);
+                seriesData.push(parseInt(item.total) || 0); // Pastikan total adalah angka
+            });
+
+            // Debugging
+            console.log('Categories:', categories);
+            console.log('Series Data:', seriesData);
+
+            // Pastikan container chart sudah ada di DOM
+            if ($('#chart_part').length === 0) {
+                console.error('Container chart_part tidak ditemukan di DOM');
+                return;
+            }
+
+            Highcharts.chart('chart_part', {
+                chart: {
+                    type: 'column',
+                    plotBackgroundColor: '#ffffff',
+                    plotBorderColor: '#cccccc',
+                    plotBorderWidth: 1
+                },
+                title: {
+                    text: 'Top Part Contributor',
+                    style: {
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        color: '#333333'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    categories: categories,
+                    title: {
+                        text: 'Reference',
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labels: {
+                        rotation: 0,
+                        style: {
+                            color: (Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color) || 'gray'
+                        }
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Quantity',
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labels: {
+                        overflow: 'justify',
+                        style: {
+                            fontWeight: 'bold',
+                            color: (Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color) || 'gray'
+                        }
+                    }
+                },
+                tooltip: {
+                    pointFormat: '<b>{series.name}: {point.y}</b><br/>',
+                    shared: true,
+                    useHTML: true,
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                plotOptions: {
+                    column: {
+                        dataLabels: {
+                            enabled: true,
+                            style: {
+                                color: '#000000'
+                            }
+                        },
+                        cursor: 'pointer',
+                        borderRadius: 7,
+                        pointWidth: 30,
+                        events: {
+                            click: function (event) {
+                                var reference = event.point.category;
+                                // Call your custom function here
+                                GetChartPartDetail(reference);
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Quantity',
+                    data: seriesData.map((total, index) => ({
+                        y: total,
+                        color: Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length]
+                    }))
+                }]
+            });
+        }
+
+        function GetChartPartDetail(reference) {
+            // Pastikan parameter yang dikirim sesuai dengan yang diterima
+            $.ajax({
+                url: "@Url.Action("GetChartPartDetail")",
+                type: "GET",
+                data: { reference: reference }, // Fixed: parameter sesuai dengan yang diterima
+                success: function (data) {
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('Request List - ' + reference);
+
+                    // Pastikan tabel sudah ada di DOM sebelum inisialisasi DataTable
+                    if ($("#tbl_details_filter").length > 0) {
+                        $("#tbl_details_filter").DataTable({
+                            "paging": true,
+                            "ordering": true,
+                            "info": true,
+                            "lengthChange": true,
+                            "scrollX": false,
+                            "fixedHeader": false
+                        });
+                    } else {
+                        console.error('Table #tbl_details_filter tidak ditemukan di DOM');
+                    }
+
+                    $('#modal_detail').modal('show');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching part details:', error);
+                    alert('Gagal mengambil detail untuk part ' + reference);
+                }
+            });
+        }
+
+        function list_request() {
+            $.ajax({
+                url: "@Url.Action("GetChartRequestList")",
+                type: "GET",
+                success: function (data) {
+                    // console.log(data)
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('List All Request');
+                    $("#tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": true,
+                        "lengthChange": true,
+                        "scrollX": false,
+                        "fixedHeader": false
+                    });
+                    $('#modal_detail').modal('show');
+                    // agingSupplierChart(data);
+                }
+            });
+        }
+
+        function list_part() {
+            $.ajax({
+                url: "@Url.Action("GetChartPartList")",
+                type: "GET",
+                success: function (data) {
+                    // console.log(data)
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('List All Part Number');
+                    $("#tbl_details_part").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": true,
+                        "lengthChange": true,
+                        "scrollX": false,
+                        "fixedHeader": false,
+
+                        // "columnDefs": [
+                        //     { "width": "10%", "targets": 0 }, // Set width for the first column
+                        //     { "width": "30%", "targets": 1 }, // Set width for the second column
+                        //     { "width": "50%", "targets": 2 }, // Set width for the third column
+                        //     { "width": "10%", "targets": 3 }  // Set width for the fourth column
+                        // ]
+
+                    });
+                    $('#modal_detail').modal('show');
+                    // agingSupplierChart(data);
+                }
+            });
+        }
+
+        function list_rack() {
+            $.ajax({
+                url: "@Url.Action("GetChartRackList")",
+                type: "GET",
+                success: function (data) {
+                    console.log(data)
+                    $('#table_detail').html('');
+                    $('#table_detail').html(data);
+                    $('#detail_title').html('List Rack Content');
+                    $("#tbl_details_rack").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": true,
+                        "lengthChange": true,
+                        "scrollX": false,
+                        "fixedHeader": false
+                    });
+                    $('#modal_detail').modal('show');
+                    // agingSupplierChart(data);
+                }
+            });
+        }
+
+    </script>
+}
+
+
+

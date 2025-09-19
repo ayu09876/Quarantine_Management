@@ -1,0 +1,1689 @@
+﻿@using Quarantine_Management.Function
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    DateTime dt = DateTime.Now;
+    var Month = dt.ToString("MMMM");
+}
+
+<style>
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    #image {
+        transition: transform 0.2s;
+        margin: auto;
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+
+    .modal-dialog {
+        max-width: 110% !important;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .modal {
+        padding-right: 4px !important;
+        padding: .5%;
+    }
+
+    .modal-dialog {
+        max-width: 400px;
+    }
+
+    .modal-header {
+        padding: 10px 15px;
+    }
+
+    .modal-body {
+        padding: 10px 15px;
+    }
+
+    /* Hide the browser's default radio button */
+    .container input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    /* Green */
+    .success {
+        border: 3px solid;
+        border-color: #04AA6D;
+        color: green;
+    }
+
+    .clicked_success {
+        background-color: #04AA6D;
+        color: white;
+    }
+
+    .success:hover {
+        background-color: #04AA6D;
+        color: white;
+    }
+
+    /* Blue */
+    .info {
+        border-color: #2196F3;
+        color: dodgerblue;
+    }
+
+
+    /* Orange */
+    .warning {
+        border: 3px solid;
+        border-color: #ff9800;
+        color: orange;
+    }
+
+    .clicked_warning {
+        background-color: #ff9800;
+        color: white;
+    }
+
+    .warning:hover {
+        background: #ff9800;
+        color: white;
+    }
+
+    /* Red */
+    .danger {
+        border: 3px solid;
+        border-color: #f44336;
+        color: red;
+    }
+
+    .clicked_danger {
+        background: #f44336;
+        color: white;
+    }
+
+    .danger:hover {
+        background: #f44336;
+        color: white;
+    }
+
+    label.actual-btn {
+        display: inline-block;
+        color: white;
+        padding: 0.5rem;
+        font-family: sans-serif;
+        border-radius: 0.3rem;
+        cursor: pointer;
+        width: 100px;
+        height: 30px;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    button.actual-btn {
+        display: inline-block;
+        background-color: #3dcd58;
+        color: white;
+        padding: 0.5rem;
+        font-family: sans-serif;
+        border-radius: 0.3rem;
+        cursor: pointer;
+        width: 100px;
+        height: 30px;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    #file-chosen {
+        margin-left: 0.3rem;
+        font-family: sans-serif;
+    }
+
+</style>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row pt-2">
+            <div class="col-lg-12 mt-2 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex">
+                                <h2 class="text-dark fw-bold"><i class=' fa fa-ban text-danger'></i>&nbsp;Declined </h2>
+                                <h2 class="text-dt fw-bold">&nbsp;Data&nbsp;</h2>
+                            </div>
+                            <div>
+                                <button class="btn btn-success btn-sm" onclick="DownlodDeclinedData()">
+                                    <i class="fa fa-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date From</label>
+                                <input type="date" id="date_from" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date From" />
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-6">
+                                <label class="font-weight-bold" style="font-size:10pt;">Date To</label>
+                                <input type="date" id="date_to" min="2020-01-01" class="form-control form-control-sm text-center" placeholder="Select Date To" />
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_apply" name="btn_apply" onclick="applyfilter()" class="btn btn-primary btn-sm btn-block mt-2"><i class="fa fa-search mr-1"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_reset" name="btn_reset" class="btn btn-sm btn-danger btn-block mt-2" onclick="window.location.reload()"><i class="fa fa-history mr-1"></i> </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <div id="spinner_loading" class="text-center mt-2">
+                                    <i class="fas fa-spinner fa-spin fa-lg" style="font-size:30pt;"></i>
+                                </div>
+                                <div class="table-responsive" id="table_details" style="overflow-x: auto; white-space: nowrap; scrollbar-width: thin; scroll-behavior: smooth;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="text-white"><i class="fa fa-info-circle mr-2"></i> Picture <span id="req_id"></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%; display: block; margin: 0 auto;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal_detail" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#17a2b8">
+                <h5 class="text-white d-flex align-items-center">
+                    <i class="fa fa-info-circle mr-2"></i>Request Details
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mx-2">
+                    <div class="col-lg-12 mb-3">
+                        <div id="table_detail"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div id="modal_edit" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header bg-info py-2">
+                <h5 class="text-white d-flex align-items-center m-0">
+                    <i class="fa fa-exclamation-circle mr-2"></i> Declined Request
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <!-- Decline Alert -->
+            <div class="alert alert-danger mx-3 mt-2 mb-0 py-2" style="background-color: #f8d7da; border-color: #f5c6cb; color: #721c24;">
+                <h6 class="alert-heading font-weight-bold mb-1">Your Request has been Declined by CSQManager</h6>
+                <p class="mb-0 small">Verification Comment: <span id="verifycomentDeclined" class="font-weight-bold"></span></p>
+            </div>
+
+            <div class="modal-body pt-2 pb-3">
+                <div class="row">
+                    <!-- Left Column -->
+                    <div class="col-md-6">
+                        <!-- Request Information -->
+                        <div class="card card-outline card-secondary mb-3">
+                            <div class="card-header bg-light py-1">
+                                <h6 class="card-title m-0 small"><i class="fa fa-info-circle mr-1 text-primary"></i>Request Information</h6>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Request ID</label>
+                                            <input type="hidden" id="id_req" />
+                                            <input type="text" id="req_idEdit" class="form-control form-control-sm" disabled />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Requestor</label>
+                                            <input type="text" id="justshowusername" value='@HttpContextAccessor.HttpContext.Session.GetString("name")' class="form-control form-control-sm" disabled />
+                                            <input type="text" id="usr_sesa" value='@HttpContextAccessor.HttpContext.Session.GetString("sesa_id")' hidden />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Part Information Section -->
+                        <div class="card card-outline card-primary mb-3">
+                            <div class="card-header bg-light py-1">
+                                <h6 class="card-title m-0 small"><i class="fa fa-cube mr-1 text-primary"></i>Part Information</h6>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Reference<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="referenceEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <label class="small font-weight-bold mb-1">Rack<span class="text-danger">*</span></label>
+                                                    <select class="form-control form-control-sm" id="rackEdit"></select>
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="small font-weight-bold mb-1">Row<span class="text-danger">*</span></label>
+                                                    <select class="form-control form-control-sm" id="rowEdit"></select>
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="small font-weight-bold mb-1">Column<span class="text-danger">*</span></label>
+                                                    <select class="form-control form-control-sm" id="columnEdit"></select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Box Type<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="boxtypedEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Quantity<span class="text-danger">*</span></label>
+                                            <input class="form-control form-control-sm" type="number" id="quantityEdit" placeholder="Enter quantity" />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">PIC<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="PICEdit" onchange="disDeptCheck(this);"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Maximum Stay<span class="text-danger">*</span></label>
+                                            <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                                                <input type="text" class="form-control form-control-sm datetimepicker-input" id="max_agingEdit" data-target="#datetimepicker1" placeholder="Select date" />
+                                                <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Remark<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="remarkEdit" onchange="disDeptCheck(this);"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1" id="ppapLabel">PPAP</label>
+                                            <input type="text" id="ppapEdit" class="form-control form-control-sm" placeholder="Input PPAP" disabled />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Issue Information Section -->
+                        <div class="card card-outline card-warning mb-3">
+                            <div class="card-header bg-light py-1">
+                                <h6 class="card-title m-0 small"><i class="fa fa-exclamation-triangle mr-1 text-warning"></i>Issue Information</h6>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Source Issue<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="issuesourceEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Issue Category<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="issuecategoryEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Issue Detail<span class="text-danger">*</span></label>
+                                            <textarea class="form-control form-control-sm" id="issuedescEdit" rows="2" placeholder="Describe the issue in detail"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="col-md-6">
+                        <!-- Image Upload Section -->
+                        <div class="card card-outline card-info mb-3">
+                            <div class="card-header bg-light py-1">
+                                <h6 class="card-title m-0 small"><i class="fa fa-camera mr-1 text-info"></i>Rack-Finding Picture</h6>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <div class="form-group text-center mb-2">
+                                            <div id="file_section" class="mb-1">
+                                                <input onchange="readimgedit(this);" type="file" name="file" accept=".jpg, .bmp, .png, .jfif" id="actual-btn" hidden />
+                                                <label for="actual-btn" class="btn btn-info btn-sm"><i class="fa fa-folder-open mr-1"></i> Choose File</label>
+                                                <div class="mt-1">
+                                                    <span id="file-chosen" class="small">No File Chosen</span>
+                                                    <button id="reset-btn" class="btn btn-sm btn-danger ml-1" style="display: none;"><i class="fa fa-times"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="text-muted small">(<1 MB)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-center justify-content-center">
+                                        <div class="h6 m-0">OR</div>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="form-group text-center mb-2">
+                                            <div id="file_section111" class="mb-1">
+                                                <button name="btn_ng_take" id="btn_ng_take" hidden></button>
+                                                <label for="btn_ng_take" class="btn btn-info btn-sm"><i class="fa fa-camera mr-1"></i> Take Picture</label>
+                                                <div class="mt-1">
+                                                    <span id="picture-taken" class="small">No Picture Taken</span>
+                                                    <button id="reset-taken" class="btn btn-sm btn-danger ml-1" style="display: none;"><i class="fa fa-times"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="text-muted small">(clear image)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="text-center mt-1">
+                                            <p class="small font-weight-bold mb-1">Preview</p>
+                                            <img id="img-preview" src="~/assets/CameraNG.png" alt="Preview" class="img-thumbnail" style="max-width: 150px; max-height: 150px; object-fit: contain;" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Proposed SAP Movement Section -->
+                        <div class="card card-outline card-success mb-3">
+                            <div class="card-header bg-light py-1">
+                                <h6 class="card-title m-0 small"><i class="fa fa-exchange-alt mr-1 text-success"></i>Proposed SAP Movement</h6>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Disposition<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="dispositionEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Source Sloc<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="source_slocEdit"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-2">
+                                            <label class="small font-weight-bold mb-1">Destination<span class="text-danger">*</span></label>
+                                            <select class="form-control form-control-sm" id="dest_slocEdit"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Section -->
+                        <div class="card card-outline card-secondary mb-3">
+                            <div class="card-header bg-light py-1">
+                                <h6 class="card-title m-0 small"><i class="fa fa-cogs mr-1 text-secondary"></i>Action Required</h6>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="form-group mb-2">
+                                    <label class="small font-weight-bold mb-1">Action<span class="text-danger">*</span></label>
+                                    <textarea class="form-control form-control-sm" id="comentAction" rows="3" placeholder="Describe the Action"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center mt-2">
+                    <button class="btn btn-primary px-4" id="updateDeclined" onclick="UpdateDeclined()">
+                        <i class="fas fa-edit mr-2"></i> UPDATE REQUEST
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="show_image" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Image Preview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="enlargedImage" src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#3dcd58">
+                <h5 class="text-white">
+                    <i class="fa fa-info-circle mr-2"></i> Picture <span id="test-id"></span>
+                </h5>
+                <input onchange="readimgng(this);" type="file" id="image_ng_upload" name="image_ng_upload" accept=".jpg, .jpeg, .png" hidden />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <center>
+                    <h6>PICTURE</h6>
+                </center>
+                <img id="image" src="" alt="No Image" style="width: 50%;">
+                <hr style="height:2px;border-width:0;color:gray;background-color:gray;width:70%">
+                <p id="image-filename"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_take" tabindex="-1" role="dialog" aria-labelledby="modal_take" aria-hidden="true">
+    <div class="modal-lg modal-dialog dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cameraModalLabel">Take NG Picture</h5>
+                <button type="button" class="close closetake" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <div class="frame" style="border: 2px solid #82828282; padding: 10px; height: 450px; display: flex; justify-content: center; align-items: center;">
+                            <h6 style="position: absolute; top: 10px; background: white; padding: 0 10px;">Real-Time Camera</h6>
+                            <video id="video" autoplay playsinline style="width: auto; height: 100%; display: none;"></video>
+                            <div id="cameraPlaceholder" style="width: 100%; height: 100%; background: #eaeaea; display: flex; justify-content: center; align-items: center; border: 1px dashed #ccc;">
+                                <p style="color: #888;">Camera feed will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <div class="frame" style="border: 2px solid #82828282; padding: 10px; height: 450px; display: flex; justify-content: center; align-items: center;">
+                            <h6 style="position: absolute; top: 10px; background: white; padding: 0 10px;">Captured Image</h6>
+                            <canvas id="canvasCaptured" style="display: none; width: auto; height: 100%;"></canvas>
+                            <img id="captured_image" style="width: auto; height: 100%;" />
+                            <div id="canvasPlaceholder" style="width: 100%; height: 100%; background: #eaeaea; display: flex; justify-content: center; align-items: center; border: 1px dashed #ccc;">
+                                <p style="color: #888;">Captured image will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="captureButton" onclick="capturePhoto()">Capture</button>
+                <button type="button" class="btn btn-success" id="saveButton" onclick="savePhoto()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let isSearch = false;
+        var loading = "<div class='text-center'><i class='fa fa-4x fa-spinner fa-spin'></i></div>";
+
+
+        $(document).ready(function () {
+            $.ajax({
+                url: "@Url.Action("GetFilterDate")",
+                type: "POST",
+                success: function (data) {
+                    $('#date_from').val(data[0].date_From);
+                    $('#date_to').val(data[0].date_To);
+                    applyfilter();
+                }
+            });
+
+
+
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+        });
+
+        function applyfilter() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+
+            $("#table_details").html('');
+            var table = $("#table_details");
+            var table1 = $("#tbl_details_filter");
+
+            $.ajax({
+                url: "@Url.Action("GetDeclinedData")",
+                type: "Get",
+                data: {
+                    date_from: date_from,
+                    date_to: date_to
+                },
+                success: function (data) {
+                    table.html(data);
+                    $("#table_details").attr('hidden', false);
+                    $("#table_details #tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": false,
+                        "scrollX": false,
+                        "searching": true,
+                        "lengthChange": true,
+                        "fixedHeader": true,
+                        "initComplete": function (settings, json) {
+                            $("#tbl_details_filter").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");
+                        },
+                    });
+                },
+                complete: function () {
+                    $('#spinner_loading').hide();
+                }
+            });
+        }
+
+        function zoomImage(image) {
+            $("#show_image").modal("show");
+            $("#enlargedImage").attr("src", image);
+        }
+
+
+        $(document).ready(function () {
+            $('#statusFilter').select2({
+                placeholder: 'Select Status',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetStatusFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+        })
+
+        function btn_picture(id) {
+            console.log("Button clicked for ID:", id);
+            $('#imageModal').modal('show');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetImages", "User")",
+                data: { id_req: id },
+                success: function (data) {
+                    console.log("Received data:", data);
+
+                    if (data.items && data.items.length > 0) {
+                        var picture = data.items[0].picture;
+                        console.log("Found picture:", picture);
+                        $("#image").attr("src", "../images/upload/" + picture);
+                        $("#image-filename").text(picture);
+                        $("#req_id").html(id);
+                    } else {
+                        console.log("No images found in data");
+                        $("#image").attr("src", "");
+                        $("#image-filename").text("No image found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching image:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert("Error loading image. Check console for details.");
+                }
+            });
+        }
+
+        function detailApproval(id) {
+            $('#modal_detail').modal('show');
+            $('#id_req').val(id);
+
+            $('#table_detail').html('');
+
+            $.ajax({
+                url: '@Url.Action("GetDetailData")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_detail').html(data);
+                }
+            });
+
+        }
+
+        function EditData(id, req_id, reference, rack, row, column, box_type, quantity, pic, max_aging, remark, ppap, issue_source, issue_category, issue_detail, picture, disposition, source_sloc, dest_sloc, source_sloc_detail, dest_sloc_detail, source_sloc_id, dest_sloc_id) {
+            console.log("Source SLOC received:", source_sloc);
+            console.log("Dest SLOC received:", dest_sloc);
+            console.log("Source SLOC Detail received:", source_sloc_detail);
+            console.log("Dest SLOC Detail received:", dest_sloc_detail);
+            console.log("Picture:", picture);
+
+            $('#id_req').val(id);
+            $('#req_idEdit').val(req_id);
+
+            $('#referenceEdit').empty();
+            if (reference) {
+                $('#referenceEdit').append(new Option(reference, reference, true, true));
+            }
+
+            $('#rackEdit').empty();
+            if (rack) {
+                $('#rackEdit').append(new Option(rack, rack, true, true));
+            }
+            $('#rowEdit').empty();
+            if (row) {
+                $('#rowEdit').append(new Option(row, row, true, true));
+            }
+
+            $('#columnEdit').empty();
+            if (column) {
+                $('#columnEdit').append(new Option(column, column, true, true));
+            }
+
+
+            $('#boxtypedEdit').empty();
+            if (box_type) {
+                $('#boxtypedEdit').append(new Option(box_type, box_type, true, true));
+            }
+
+            // For quantity, it should be a direct value rather than a select option
+            $('#quantityEdit').val(quantity);
+
+            $('#PICEdit').empty();
+            if (pic) {
+                $('#PICEdit').append(new Option(pic, pic, true, true));
+            }
+
+            // For max_aging, it should be handled as a date value
+            if (max_aging) {
+                $('#max_agingEdit').val(max_aging);
+            }
+
+            $('#remarkEdit').empty();
+            if (remark) {
+                $('#remarkEdit').append(new Option(remark, remark, true, true));
+            }
+
+            // For ppap, it should be a direct value
+            $('#ppapEdit').val(ppap);
+
+            $('#issuesourceEdit').empty();
+            if (issue_source) {
+                $('#issuesourceEdit').append(new Option(issue_source, issue_source, true, true));
+            }
+
+            $('#issuecategoryEdit').empty();
+            if (issue_category) {
+                $('#issuecategoryEdit').append(new Option(issue_category, issue_category, true, true));
+            }
+
+            // For issue detail, it should be a textarea value
+            $('#issuedescEdit').val(issue_detail);
+
+            $('#dispositionEdit').empty();
+            if (disposition) {
+                $('#dispositionEdit').append(new Option(disposition, disposition, true, true));
+            }
+            // For source_sloc
+            $('#source_slocEdit').empty();
+            // Create a new option element directly
+            var source_option = document.createElement('option');
+            source_option.text = source_sloc + ' - ' + source_sloc_detail; // "9211 - Some Description"
+            source_option.value = source_sloc_id; // Just "9211"
+            source_option.selected = true;
+            $('#source_slocEdit')[0].add(source_option);
+
+            // For dest_sloc
+            $('#dest_slocEdit').empty();
+            // Create a new option element directly
+            var dest_option = document.createElement('option');
+            dest_option.text = dest_sloc + ' - ' + dest_sloc_detail;; // "9009 - PartRwrk Ven-PEM"
+            dest_option.value = dest_sloc_id; // Just "9009"
+            dest_option.selected = true;
+            $('#dest_slocEdit')[0].add(dest_option);
+
+            if (picture && picture !== 'null' && picture !== '') {
+                const fileType = picture.split('.').pop().toLowerCase();
+                const imageTypes = ['jpg', 'jpeg', 'bmp', 'png', 'jfif', 'gif'];
+                if (imageTypes.includes(fileType)) {
+                    $('#img-preview').attr("src", "../images/upload/" + picture);
+                    $('#file-type-icon').hide();
+                    $('#file-chosen').text(picture);
+                } else {
+                    $('#img-preview').hide();
+                    $('#file-type-icon').html('<i class="far fa-file-' + getFileIcon(fileType) + '"></i>').show();
+                    $('#file-chosen').text(picture);
+                }
+            } else {
+                // No file uploaded
+                $('#img-preview').hide();
+                $('#file-type-icon').hide();
+                $('#file-chosen').text('No File Chosen');
+            }
+
+            $('#table_detail').html('');
+
+            $.ajax({
+                url: '@Url.Action("GetDetailDeclinedDataEdit")',
+                type: "Get",
+                data: {
+                    id_req: id,
+                },
+                success: function (data) {
+                    $('#table_detail').html(data);
+                    if (data.length > 0) {
+                        $('#verifycomentDeclined').text(data[0].verify_coment);
+                    } else {
+                        $('#verifycomentDeclined').text('No comments available');
+                    }
+                    $('#modal_edit').modal('show');
+                }
+            });
+        }
+
+        function UpdateDeclined() {
+            var req_id = $('#req_idEdit').val();
+            var sesa_id = $('#usr_sesa').val();
+            var reference = $('#referenceEdit').find(':selected').text();
+            var box_type = $('#boxtypedEdit').find(':selected').text();
+            var quantity = $('#quantityEdit').val();
+            var rack = $('#rackEdit').find(':selected').text();
+            var row = $('#rowEdit').find(':selected').text();
+            var column = $('#columnEdit').find(':selected').text();
+            var pic = $('#PICEdit').find(':selected').text();
+            var max_aging_display = $('#max_agingEdit').val();
+            var max_aging = max_aging_display ? convertDateFormat(max_aging_display) : "";
+            var remark = $('#remarkEdit').find(':selected').text();
+            var ppap = $('#ppapEdit').val();
+            var source_issue = $('#issuesourceEdit').find(':selected').text();
+            var issue_category = $('#issuecategoryEdit').find(':selected').text();
+            var issue_detail = $('#issuedescEdit').val();
+            var disposition = $('#dispositionEdit').find(':selected').text();
+            var sloc = $('#source_slocEdit').val();
+            var dest_sloc = $('#dest_slocEdit').val();
+            var updated_coment = $('#comentAction').val();
+
+            var fileInput = document.getElementById('actual-btn');
+            var hasFile = fileInput.files.length > 0 || $('#picture-taken').text() === 'A Picture Has been Taken';
+            var filePicture = "";
+            var blob = "";
+            const canvaspicture = document.getElementById('canvasCaptured');
+
+            if (remark == "SIL" && (ppap == "" || ppap == null)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please Fill in the PPAP ID and check all the required fields!'
+                });
+            }
+            else if (
+                updated_coment == "" || updated_coment == null
+            ) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please Fill in All the requirements first!'
+                });
+            } else if (!hasFile) {
+                const formData = new FormData();
+                formData.append('sesa_id', sesa_id);
+                formData.append('req_id', req_id);
+                formData.append('reference', reference);
+                formData.append('box_type', box_type);
+                formData.append('quantity', quantity);
+                formData.append('rack', rack);
+                formData.append('row', row);
+                formData.append('column', column);
+                formData.append('pic', pic);
+                formData.append('max_aging', max_aging);
+                formData.append('remark', remark);
+                formData.append('ppap', ppap);
+                formData.append('source_issue', source_issue);
+                formData.append('issue_category', issue_category);
+                formData.append('issue_detail', issue_detail);
+                formData.append('disposition', disposition);
+                formData.append('sloc', sloc);
+                formData.append('dest_sloc', dest_sloc);
+                formData.append('file', null);
+                formData.append('updated_coment', updated_coment);
+
+                Swal.fire({
+                    title: 'Edit this Request Data?',
+                    text: "Are you sure you want to Edit this Request Data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes!',
+                    cancelButtonText: 'No!',
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                type: "POST",
+                                url: "@Url.Action("UpdateDataDeclined", "User")",
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (response) {
+                                    console.log(response); // For debugging
+                                    if (response && response.success === true) {
+                                        Swal.fire({
+                                            title: 'Edited Successfully!',
+                                            text: 'Request Data Edited Successfully!',
+                                            icon: 'success'
+                                        }).then(function () {
+                                            window.location.href = '@Url.Action("WaitingApproval", "User")';
+                                        });
+                                    } else {
+                                        Swal.fire('Error!', 'Failed to Edit the data.', 'error');
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error(error);
+                                    Swal.fire('Error!', 'There was an error adding the data.', 'error');
+                                }
+                            });
+                        });
+                    }
+                });
+            } else {
+                const formData = new FormData();
+                formData.append('sesa_id', sesa_id);
+                formData.append('req_id', req_id);
+                formData.append('reference', reference);
+                formData.append('box_type', box_type);
+                formData.append('quantity', quantity);
+                formData.append('rack', rack);
+                formData.append('row', row);
+                formData.append('column', column);
+                formData.append('pic', pic);
+                formData.append('max_aging', max_aging);
+                formData.append('remark', remark);
+                formData.append('ppap', ppap);
+                formData.append('source_issue', source_issue);
+                formData.append('issue_category', issue_category);
+                formData.append('issue_detail', issue_detail);
+                formData.append('disposition', disposition);
+                formData.append('sloc', sloc);
+                formData.append('dest_sloc', dest_sloc);
+                formData.append('updated_coment', updated_coment); // Fixed: was missing this line
+
+                if (fileInput.files.length > 0) {
+                    var fileUpload = fileInput.files[0];
+                    formData.append('file', fileUpload);
+                } else if ($('#picture-taken').text() === 'A Picture Has been Taken' && canvaspicture.toDataURL()) {
+                    // Format current date and time for filename
+                    const now = new Date();
+                    const dateTimeString = now.getFullYear() +
+                        '-' + String(now.getMonth() + 1).padStart(2, '0') +
+                        '-' + String(now.getDate()).padStart(2, '0') +
+                        '_' + String(now.getHours()).padStart(2, '0') +
+                        '-' + String(now.getMinutes()).padStart(2, '0') +
+                        '-' + String(now.getSeconds()).padStart(2, '0');
+
+                    blob = dataURItoBlob(canvaspicture.toDataURL());
+                    formData.append('file', blob, "TakenPicture-" + dateTimeString + ".png");
+                }
+
+                Swal.fire({
+                    title: 'Edit this Request Data?',
+                    text: "Are you sure you want to Edit this Request Data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes!',
+                    cancelButtonText: 'No!',
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                type: "POST",
+                                url: "@Url.Action("UpdateDataDeclined", "User")",
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (response) {
+                                    console.log(response); // For debugging
+                                    if (response && response.success === true) {
+                                        Swal.fire({
+                                            title: 'Edited Successfully!',
+                                            text: 'Request Data Edited Successfully!',
+                                            icon: 'success'
+                                        }).then(function () {
+                                            window.location.href = '@Url.Action("WaitingApproval", "User")';
+                                        });
+                                    } else {
+                                        Swal.fire('Error!', 'Failed to Edit the data.', 'error');
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error(error);
+                                    Swal.fire('Error!', 'There was an error adding the data.', 'error');
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        }
+
+
+        function request_tracking(id_req) {
+
+            $("#modal_request_tracking").modal("show");
+            $("#body_request_tracking").html(loading);
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetRequestTracking")",
+                data: {
+                    id_req: id_req
+                },
+                success: function (data) {
+
+                    $("#body_request_tracking").html(data);
+
+                }
+            })
+        }
+
+        $(document).ready(function () {
+
+
+            $('#boxtypedEdit').select2({
+                placeholder: 'Select Box Type',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetBoxType")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#remarkEdit').select2({
+                placeholder: 'Select Remark',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetRemarkFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#issuesourceEdit').select2({
+                placeholder: 'Select Source Issue',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetSourceIssueFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                            //sector: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#source_slocEdit').select2({
+                placeholder: 'Select Source Sloc',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetSourceSloc")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            //sector: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            }).on('change', function () {
+                var selectedSourceSloc = $(this).val();
+                $('#dest_sloc').val(null).trigger('change');
+            });
+
+
+            $('#dest_slocEdit').select2({
+                placeholder: 'Select Destination Sloc',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetDestinationSloc")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            sector: $('#source_sloc').val()
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#issuecategoryEdit').select2({
+                placeholder: 'Select Issue Category',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetIssueCategory")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            //sector: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#referenceEdit').select2({
+                placeholder: 'Select Reference',
+                width: '100%',
+                tags: true,
+                ajax: {
+                    url: "@Url.Action("GetReferenceFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#rackEdit').select2({
+                placeholder: 'Select Rack',
+                width: '100%',
+                tags: true,
+                ajax: {
+                    url: "@Url.Action("GetRackFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#rowEdit').select2({
+                placeholder: 'Select Row',
+                width: '100%',
+                tags: true,
+                ajax: {
+                    url: "@Url.Action("GetRowFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#columnEdit').select2({
+                placeholder: 'Select Column',
+                width: '100%',
+                tags: true,
+                ajax: {
+                    url: "@Url.Action("GetColumnFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#issue').select2({
+                placeholder: 'Select Issue',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetIssueFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            family: params.term,
+                            //sector: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#PICEdit').select2({
+                placeholder: 'Select PIC',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetPicFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $('#dispositionEdit').select2({
+                placeholder: 'Select Disposition',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetDispositionFilter")",
+                    async: false,
+                    data: function (params) {
+                        return {
+                            cell: params.term,
+                            family: 'none'
+                        };
+                    },
+                    processResults: function (data) {
+                        //console.log(data);
+                        return {
+                            results: data.items
+                        }
+                    },
+                }
+            });
+
+            $(function () {
+                $('#datetimepicker1').datetimepicker({
+                    format: 'DD MMMM YYYY',
+                    minDate: new Date()
+                });
+            });
+        })
+
+        function disDeptCheck(that) {
+            console.log(that.options[that.selectedIndex].text);
+            if (that.options[that.selectedIndex].text == 'SIL') {
+                console.log('yes');
+                $('#ppapAdd').prop('disabled', false);
+            } else {
+                console.log('no');
+                $('#ppapAdd').prop('disabled', true);
+                $('#ppapAdd').val("");
+            }
+        }
+        function issueDeptCheck(that) {
+            if (!that.value) {
+                console.log('yes');
+                $('#issuedesc').prop('disabled', true);
+            } else {
+                console.log('no');
+                $('#issuedesc').prop('disabled', false);
+            }
+        }
+
+
+        async function readimgng(input) {
+            if (input.files && input.files[0]) {
+                let file = input.files[0];
+                await handleImageUpload(file, '#image');
+            } else {
+                document.getElementById("image").src = "";
+            }
+        }
+
+
+        async function readimgedit(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                var fileName = input.files[0].name;
+                $('#picture-taken').text('No Picture Taken');
+                $('#file-chosen').text(fileName);
+                let file = input.files[0];
+                await handleImageUpload(file, '#img-preview');
+
+                $('#reset-btn').show();
+                $('#reset-taken').hide();
+            } else {
+                document.getElementById("img-preview").value = "";
+            }
+        }
+
+        async function handleImageUpload(file, imgSelector) {
+            let originalSize = (file.size / 1024).toFixed(2); // size in KB
+            console.log(originalSize);
+
+            if (file.size > 500000) { // 500 KB
+                Swal.fire({
+                    title: 'Large File Detected!',
+                    icon: 'warning',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    html: `
+                                                                        <p>Your uploaded picture is ${originalSize} KB. Which is still above 500 KB.</p><br />
+                                                                        <div class="spinner-border text-primary" role="status"></div>
+                                                                        <p>Compressing...</p>
+                                                            `
+                });
+
+                let compressedFile = await compressImage(file);
+                let attempts = 1; // Initialize compression attempts
+
+                // Continue compressing until the file size is less than 500 KB or attempts exceed 10
+                while (compressedFile.size >= 500000 && attempts < 20) {
+                    compressedFile = await compressImage(compressedFile);
+                    attempts++;
+                }
+
+                // Check if the file is still too large after 10 attempts
+                if (compressedFile.size >= 500000) {
+                    Swal.close();
+                    const compressedSize = (compressedFile.size / 1024).toFixed(2); // size in KB
+                    Swal.fire({
+                        title: 'Compression Warning!',
+                        text: `The file size is ${compressedFile.size} bytes which is still above 500 KB after ${attempts} attempts. Will Take this as the last result. Compressed image size: ${compressedSize} KB.`,
+                        icon: 'warning',
+                    });
+
+                    // Display the compressed image
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        document.querySelector(imgSelector).src = e.target.result;
+                    };
+                    reader.readAsDataURL(compressedFile);
+                } else {
+                    Swal.close();
+                    const compressedSize = (compressedFile.size / 1024).toFixed(2); // size in KB
+                    Swal.fire({
+                        title: 'Image Compression Complete!',
+                        text: `Compressed image size: ${compressedSize} KB.`,
+                        icon: 'success',
+                    });
+
+                    // Display the compressed image
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        document.querySelector(imgSelector).src = e.target.result;
+                    };
+                    reader.readAsDataURL(compressedFile);
+                }
+            } else {
+                // If the file is already small enough, display it directly
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.querySelector(imgSelector).src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        let quality = 0.7; // Set initial quality
+
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    img.src = e.target.result;
+                };
+
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    // Convert canvas to Blob
+                    canvas.toBlob((blob) => {
+                        const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+
+                        // Adjust quality based on the size of the compressed file
+                        if (compressedFile.size >= 500000) {
+                            quality = Math.max(0.1, quality - 0.1); // Decrease quality, but not below 0.1
+                        }
+
+                        resolve(compressedFile);
+                    }, 'image/jpeg', quality);
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        $('#reset-btn').on('click', function () {
+            $('#actual-btn').val(null);
+            $('#img-preview').attr('src', '../assets/CameraOK.png')
+            $('#file-chosen').text('No File Chosen');
+            $(this).hide();
+        });
+
+        function button_detail(id) {
+            $('#modal_detail').modal('show');
+            $('#detail_id').html(id);
+            $('#tk_id').val(id);
+
+            $('#tbl_detail3').html('');
+            var table = $("#tbl_detail3");
+            $('#tbl_approvedd').html('');
+            var table1 = $("#tbl_approvedd");
+            $('#table_review1').html('');
+            var table2 = $("#table_review1");
+            $('#table_review2').html('');
+            var table3 = $("#table_review2");
+
+            $.ajax({
+                url: '@Url.Action("GetRouteQaINP")',
+                type: "POST",
+                success: function (data) {
+                    table.html(data);
+                }
+            });
+
+            $.ajax({
+                url: '@Url.Action("GetApprovedQa")',
+                type: "POST",
+                data: {
+                    tk_id: id
+                },
+                success: function (data) {
+                    table1.html(data);
+                }
+            });
+
+            $.ajax({
+                url: '@Url.Action("GetReviewQaINP")',
+                type: "POST",
+                data: {
+                    tk_id: id
+                },
+                success: function (data) {
+                    table2.html(data);
+                }
+            });
+
+            $.ajax({
+                url: '@Url.Action("GetReviewQaINP2")',
+                type: "POST",
+                data: {
+                    tk_id: id
+                },
+                success: function (data) {
+                    table3.html(data);
+                }
+            });
+        }
+
+        let stream; // Declare a variable to hold the stream
+        $("button[name=btn_ng_take]").click(function () {
+            // Initialize webcam
+            $("#video").css("display", "block");
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(s => {
+                    stream = s; // Store the stream
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    $("#cameraPlaceholder").css("display", "none");
+                })
+                .catch(err => console.error("Webcam initialization failed:", err));
+            $("#modal_take").modal("show");
+            $("#modal_edit").modal("hide");
+        })
+        // Function to stop the webcam
+        function stopWebcam() {
+            if (stream) {
+                // Stop all video tracks
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        // Add event listener to the close button
+        document.querySelector('.closetake').addEventListener('click', stopWebcam);
+
+        let dataUrl;
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvasCaptured');
+            const capturedImage = document.getElementById('captured_image');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            dataUrl = canvas.toDataURL();
+            capturedImage.src = dataUrl;
+
+            $("#canvasPlaceholder").css("display", "none");
+        }
+
+        function savePhoto() {
+            const preview = document.getElementById('img-preview');
+
+            preview.src = dataUrl;
+
+            $("#actual-btn").val(null);
+
+            $('#file-chosen').text('No File Chosen');
+            $('#picture-taken').text('A Picture Has been Taken');
+            $('#reset-taken').show(); // Show the reset button when a picture is taken
+            $('#reset-btn').hide();
+            $("#modal_take").modal("hide");
+            $("#modal_edit").modal("show");
+            stopWebcam();
+        }
+
+        $("#reset-taken").click(function () {
+            $('#actual-btn').val(null);
+            $('#file-chosen').text('No File Chosen');
+            $('#picture-taken').text('No Picture Taken');
+            $('#img-preview').attr('src', '~/assets/CameraNG.png');
+            $(this).hide();
+        });
+
+        function dataURItoBlob(dataURI) {
+            // Convert base64/URLEncoded data component to raw binary data
+            var byteString;
+            if (dataURI.split(',')[0].indexOf('base64') >= 0)
+                byteString = atob(dataURI.split(',')[1]);
+            else
+                byteString = unescape(dataURI.split(',')[1]);
+
+            // Separate out the mime component
+            var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+            // Write the bytes of the string to a typed array
+            var ia = new Uint8Array(byteString.length);
+            for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+
+            return new Blob([ia], { type: mimeString });
+        }
+
+        function convertDateFormat(dateStr) {
+            // Handling dates like "Kam 8 Mei 2025"
+            const months = {
+                'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'Mei': '05', 'Jun': '06',
+                'Jul': '07', 'Agu': '08', 'Sep': '09', 'Okt': '10', 'Nov': '11', 'Des': '12'
+            };
+
+            // Remove day name if present (e.g., "Kam")
+            let parts = dateStr.split(' ');
+            if (parts.length > 3) {
+                parts.shift(); // Remove the day name
+            }
+
+            const day = parts[0].padStart(2, '0');
+            const month = months[parts[1]];
+            const year = parts[2];
+
+            return `${year}-${month}-${day}`;
+        }
+
+        function DownlodDeclinedData() {
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+            window.location.href = "@Url.Action("DownlodDeclinedData", "Admin")?date_from=" + date_from + "&date_to=" + date_to;
+        }
+
+    </script>
+}

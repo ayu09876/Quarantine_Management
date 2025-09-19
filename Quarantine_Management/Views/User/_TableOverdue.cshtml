@@ -1,0 +1,78 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model List<RequestModel>
+
+
+<style>
+    .status-under-analysis {
+        background-color: #F4F8D3;
+    }
+
+
+    .status-waiting-approval {
+        background-color: #FFD65A;
+    }
+
+    .status-overdue {
+        background-color: #C5172E;
+    }
+
+    .status-approved {
+        background-color: #F5EEDC;
+    }
+</style>
+
+<table id="tbl_details_filter" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 11px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white">Request ID</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Requestor</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Reference</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Quantity</th>
+            <th class="font-calibri border-right align-middle text-center text-white">PIC</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Remark</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Picture</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Request Date</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Status</th>
+            <th class="font-calibri border-right align-middle text-center text-white">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (RequestModel item in Model)
+        {
+            string statusClass = item.status switch
+            {
+                "Overdue" => "status-overdue",
+                _ => ""
+            };
+            <tr>
+                <td class="align-middle text-center border-right" style="font-weight:bold">@Html.Raw(DisplayValue(item.req_id))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.requestor))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.reference))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.quantity))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.pic))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.remark))</td>
+                <td class="align-middle text-center border-right">
+                    <button class="btn btn-danger mb-1 mt-1" style="width:2rem; padding:0.25rem;" onclick="btn_picture('@item.id_req')">
+                        <i class="fa fa-camera"></i>
+                    </button>
+                </td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.request_date))</td>
+                <td class="align-middle text-center border-right text-white @statusClass">@Html.Raw(DisplayValue(item.status))</td>
+                <td class="align-middle text-center">
+                    <button class="btn btn-info mb-1 mt-1" style="width:2.5rem; height:2.5rem; padding:0.375rem;" onclick="detailOverdue('@item.id_req')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string DisplayValue(object value)
+    {
+        return value == null || string.IsNullOrEmpty(value.ToString()) ? "<span style='color:red'>NA</span>" : value.ToString();
+    }
+}

@@ -1,0 +1,592 @@
+﻿@using Quarantine_Management.Function
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    DateTime dt = DateTime.Now;
+    var Month = dt.ToString("MMMM");
+}
+
+<style>
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .modal-header {
+        background-color: #28a745;
+        border-bottom: none;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+
+
+
+    .required {
+        color: #e74c3c;
+        margin-left: 0.25rem;
+    }
+
+    .btn-submit {
+        border: none;
+        border-radius: 0.25rem;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s;
+        box-shadow: 0 3px 5px rgba(46, 204, 113, 0.2);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .form-card {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%; /* This will make both cards take up the full height of their parent */
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .col-md-6 {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .form-card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 1.25rem;
+        border-bottom: 2px solid #3dcd58;
+        padding-bottom: 0.5rem;
+    }
+
+
+    #manual .select2-container {
+        width: 50% !important;
+    }
+
+    .input-group {
+        display: flex;
+        width: 100%;
+    }
+
+    .input-group-prepend {
+        display: flex;
+    }
+
+    .input-group-text {
+        display: flex;
+        align-items: center;
+    }
+
+</style>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row pt-2">
+            <div class="col-lg-12 mt-2 mb-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex">
+                                <h2 class="text-dark fw-bold"><i class='fa fa-folder'></i></h2>
+                                <h2 class="text-dt fw-bold">&nbsp;Approver Master</h2>
+                            </div>
+                            <div>
+                                <button class="btn btn-success btn-sm" onclick="addData()">
+                                    <i class="fa fa-plus"></i> New Approver
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="DownloadData()">
+                                    <i class="fa fa-download"></i> Download Data
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_apply" name="btn_apply" onclick="applyfilter()" class="btn btn-primary btn-sm btn-block mt-2"><i class="fa fa-search mr-1"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-lg-1 col-md-1 col-sm-6">
+                                <label style="font-size:10pt;"></label>
+                                <div>
+                                    <button id="btn_reset" name="btn_reset" class="btn btn-sm btn-danger btn-block mt-2" onclick="window.location.reload()"><i class="fa fa-history mr-1"></i> </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-lg-12 col-md-12 col-sm-12">
+                                <div id="spinner_loading" class="text-center mt-2">
+                                    <i class="fas fa-spinner fa-spin fa-lg" style="font-size:30pt;"></i>
+                                </div>
+                                <div class="table-responsive" id="table_details" style="overflow-x: auto; white-space: nowrap; scrollbar-width: thin; scroll-behavior: smooth;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="modal_add" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="text-white font-weight-bold">
+                    <i class="fa fa-user-plus mr-2"></i>Add New Approver
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row ml-2 mr-2">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label style="font-size:10pt;font-weight : bold; ">Approver SESA </label>
+                            <select class="form-control form-control-sm text-center" id="sesaAdd" style="width:100%;"></select>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label style="font-size:10pt;font-weight : bold;">Route Level </label>
+                            <select class="form-control form-control-sm text-center" id="levelAdd" style="width:100%;"></select>
+
+                        </div>
+                    </div>
+                  
+                    <div class="col-12">
+                        <label style="font-size:12pt;"></label>
+                        <div class="row d-flex justify-content-center">
+                            <div class="col-3 mx-auto">
+                                <button class="btn btn-success btn-block" id="create_Data"><i class="fas fa-plus"></i> Add Master Data </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal_edit" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="text-white font-weight-bold">
+                    <i class="fa fa-user-edit mr-2"></i>Update Data
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row ml-2 mr-2">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label style="font-size:10pt;font-weight:bold;">Approver Name<span style="color: red; font-weight:bold;">*</span></label>
+                            <select class="form-control form-control-sm text-center" id="sesaEdit" style="width:100%;"></select>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label style="font-size:10pt;font-weight:bold;">Approver Level<span style="color: red; font-weight:bold;">*</span></label>
+                            <select class="form-control form-control-sm text-center" id="levelEdit" style="width:100%;"></select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="id" class="form-control form-control-sm" />
+                    <div class="col-12">
+                        <label style="font-size:12pt;"></label>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-submit px-4 bg-success text-white" id="update_data">
+                                <i class="fas fa-save mr-2"></i> Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let isSearch = false;
+        var loading = "<div class='text-center'><i class='fa fa-4x fa-spinner fa-spin'></i></div>";
+        $(document).ready(function () {
+            $.ajax({
+                url: "@Url.Action("GetFilterDate")",
+                type: "POST",
+                success: function (data) {
+                    $('#date_from').val(data[0].date_From);
+                    $('#date_to').val(data[0].date_To);
+                    applyfilter();
+                }
+            });
+
+
+
+            var date_from = $('#date_from').val();
+            var date_to = $('#date_to').val();
+        });
+
+        function applyfilter() {
+            // var sloc = $('#slocFilter option:selected').text();
+
+            $("#table_details").html('');
+            var table = $("#table_details");
+            var table1 = $("#tbl_details_filter");
+
+            $.ajax({
+                url: "@Url.Action("GetAllMasterDataApprover")",
+                type: "Get",
+                data: {
+                },
+                success: function (data) {
+                    table.html(data);
+                    $("#table_details").attr('hidden', false);
+                    $("#table_details #tbl_details_filter").DataTable({
+                        "paging": true,
+                        "ordering": true,
+                        "info": false,
+                        "scrollX": false,
+                        "searching": true,
+                        "lengthChange": true,
+                        "fixedHeader": true,
+                        "initComplete": function (settings, json) {
+                            $("#tbl_details_filter").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");
+                        },
+                    });
+                },
+                complete: function () {
+                    $('#spinner_loading').hide();
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            // Initialize Name Filter
+            $('#sesaAdd').select2({
+                placeholder: 'Select Approver SESA',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetSESA_Approver")",
+                    data: function (params) {
+                        return {
+                            family: params.term,
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error: " + textStatus, errorThrown);
+                    }
+                }
+            });
+            $('#sesaEdit').select2({
+                placeholder: 'Select Approver SESA',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetSESA_Approver")",
+                    data: function (params) {
+                        return {
+                            family: params.term,
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error: " + textStatus, errorThrown);
+                    }
+                }
+            });
+            $('#levelAdd').select2({
+                placeholder: 'Select Route Level',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetRouteLevel")",
+                    data: function (params) {
+                        return {
+                            family: params.term,
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error: " + textStatus, errorThrown);
+                    }
+                }
+            });
+
+              $('#levelEdit').select2({
+                placeholder: 'Select Route Level',
+                width: '100%',
+                ajax: {
+                    url: "@Url.Action("GetRouteLevel")",
+                    data: function (params) {
+                        return {
+                            family: params.term,
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.items
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error: " + textStatus, errorThrown);
+                    }
+                }
+            });
+
+
+
+        });
+
+        function addData() {
+            $('#modal_add').modal('show');
+        }
+
+        $("#create_Data").click(function () {
+            var usr_sesa = $('#sesaAdd option:selected').text();
+            var level = $('#levelAdd option:selected').text();
+            var route_flow = $('#levelAdd').val();
+
+            if (usr_sesa == '' || level == '' || route_flow == '') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please fill in all the required fields!'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Add New Approver Data?',
+                    text: "Are you sure you want to add this new Approver data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes!',
+                    cancelButtonText: 'No!',
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                type: "POST",
+                                async: false,
+                                url: "@Url.Action("AddNewApprover", "Admin")",
+                                data: {
+                                    usr_sesa: usr_sesa,
+                                    route_level: level,
+                                    route_flow: route_flow
+                                },
+                                success: function (data) {
+                                    if (data.items === 1) {
+                                        Swal.fire(
+                                            'Added!',
+                                            'New user has been added.',
+                                            'success'
+                                        );
+                                    } else if (data.items === -1) {
+                                        Swal.fire(
+                                            'Duplicate!',
+                                            'User data already exists.',
+                                            'error'
+                                        );
+                                    }
+                                    window.location.href = '@Url.Action("ApproverMaster", "Admin")';
+                                },
+                                complete: function () {
+                                    $('#spinner_loading').hide();
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        });
+
+        function btn_update(id, usr_sesa, route_lvl, route_flow) {
+            $('#id').val(id);
+            $('#sesaEdit').empty(); 
+            if (usr_sesa) {
+                $('#sesaEdit').append(new Option(usr_sesa, usr_sesa, true, true));
+            }
+
+            $('#levelEdit').val(route_flow);
+            $('#levelEdit').empty();  
+            if (route_lvl) {
+                $('#levelEdit').append(new Option(route_lvl, route_lvl, true, true));
+            }
+
+            $("#modal_edit").modal("show");
+        }
+        $("#update_data").click(function () {
+            var id = $('#id').val();
+            var usr_sesa = $('#sesaEdit option:selected').text();
+            var level = $('#levelEdit option:selected').text();
+            var route_flow = $('#levelEdit').val();
+            if (id == '' || usr_sesa == '' || level == '' || route_flow == '') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please fill in all the required fields!'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Update Approver Data?',
+                    text: "Are you sure you want to update this Approver data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes!',
+                    cancelButtonText: 'No!',
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                type: "POST",
+                                url: "@Url.Action("UpdateDataApprover", "Admin")",
+                                data: {
+                                    id: id,
+                                    usr_sesa: usr_sesa,
+                                    route_lvl: level,
+                                    route_flow: route_flow
+                                },
+                                dataType: 'json',
+                                success: function (response) {
+                                    console.log("Success response:", response);
+                                    if (response.success) {
+                                        Swal.fire({
+                                            title: 'Updated Successfully!',
+                                            text: 'Approver Data Updated Successfully!',
+                                            icon: 'success'
+                                        }).then(function () {
+                                            window.location.href = '@Url.Action("ApproverMaster", "Admin")';
+                                        });
+                                    } else {
+                                        Swal.fire('Error!', response.message || 'Failed to update the data.', 'error');
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Error:", error);
+                                    Swal.fire('Error!', 'Failed to update the data. Please try again.', 'error');
+                                    reject(error);
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        });
+
+
+        function btn_delete(id) {
+            if (id == '') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please select a Approver to delete!'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Delete User?',
+                    text: "Are you sure you want to delete this Approver data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes!',
+                    cancelButtonText: 'No!',
+                    showLoaderOnConfirm: true,
+                    preConfirm: function () {
+                        return new Promise(function (resolve, reject) {
+                            $.ajax({
+                                type: "POST",
+                                url: "@Url.Action("DeleteDataApproverData", "Admin")",
+                                data: {
+                                    id: id
+                                },
+                                success: function (response) {
+                                    if (response.success) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Success',
+                                            text: 'Approver Data deleted successfully!'
+                                        }).then(function () {
+                                            window.location.reload();
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error',
+                                            text: response.message || 'Failed to delete Sloc!'
+                                        });
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Delete error:", xhr.responseText);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: 'An error occurred while deleting the Approver. Please try again.'
+                                    });
+                                },
+                                complete: function () {
+                                    $('#spinner_loading').hide();
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        }
+
+        function DownloadData() {
+            window.location.href = "@Url.Action("DownloadDataApprover", "Admin")";
+        }
+
+    </script>
+}

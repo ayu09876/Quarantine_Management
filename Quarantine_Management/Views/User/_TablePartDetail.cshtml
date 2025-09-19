@@ -1,0 +1,62 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@model List<RequestModel>
+
+<table id="tbl_details_part" class="table table-sm table-bordered" style="width: 100%; max-width: 100%; font-size: 12px">
+    <thead class="bg-success text-center">
+        <tr class="text-center">
+            <th class="font-calibri border-right align-middle text-center text-white" width="10%">No</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="30%">Reference</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="50%">Rack</th>
+            <th class="font-calibri border-right align-middle text-center text-white" width="10%">Quantity</th>
+            @* <th class="font-calibri border-right align-middle text-center text-white" >Action</th> *@
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int rowNumber = 1;
+        }
+        @foreach (RequestModel item in Model)
+        {
+            <tr>
+                <td class="align-middle text-center border-right">
+                    @rowNumber
+                </td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.reference))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.rack))</td>
+                <td class="align-middle text-center border-right">@Html.Raw(DisplayValue(item.quantity))</td>
+                @* <td class="align-middle text-center border-right">
+            <button class="btn btn-secondary mb-1 mt-1" style="width:2rem; padding:0.25rem;" onclick="btn_detail(`@item.id_req`)">
+            <i class="fas fa-eye"></i>
+            </button>
+            </td> *@
+            </tr>
+            rowNumber++;
+        }
+    </tbody>
+</table>
+@functions {
+    private string DisplayValue(object value)
+    {
+        return value == null || string.IsNullOrEmpty(value.ToString()) ? "<span style='color:red'>NA</span>" : value.ToString();
+    }
+}
+<style>
+    .status-in-transit {
+        background-color: #F4F8D3;
+    }
+
+
+    .status-Waiting-WH-Outbound {
+        background-color: #9FB3DF;
+    }
+
+    .status-Waiting-Replacement {
+        background-color: #BDDDE4;
+    }
+
+    .status-done {
+        background-color: #C2FFC7;
+    }
+</style>
