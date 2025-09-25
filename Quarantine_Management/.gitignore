@@ -1,3 +1,9 @@
 # Ignore bin and obj folders
 bin/
 obj/
+.vs/
+*.user
+*.suo
+packages/
+.env
+appsettings.Development.json

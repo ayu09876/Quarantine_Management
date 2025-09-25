@@ -10,7 +10,9 @@ using System.Diagnostics.Eventing.Reader;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using System.Xml.Linq;
-
+using System.Net;
+using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
@@ -24,9 +26,492 @@ namespace Quarantine_Management.Function
 {
     public class DatabaseAccessLayer
     {
-        //public string ConnectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=Quarantine_Management;Persist Security Info=True;MultipleActiveResultSets=True;";
        
         public string ConnectionString = @$"Data Source=LAPTOP-1TMIIIGV\SQLEXPRESS;Initial Catalog=SEMB_QAMANAGEMENT;Integrated Security=True;TrustServerCertificate=True;Persist Security Info=True;" + "MultipleActiveResultSets=True";
+        
+        private readonly IConfiguration _configuration;
+
+        public DatabaseAccessLayer(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        public DatabaseAccessLayer()
+        {
+            // Parameterless constructor for compatibility
+        }
+
+        // Email sending utility method
+        private async Task SendEmailAsync(string to, string cc, string subject, string body)
+        {
+            try
+            {
+                // Build configuration manually (works without DI)
+                var config = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .Build();
+
+                var smtpSettings = config.GetSection("SmtpSettings");
+                if (!smtpSettings.Exists())
+                    throw new InvalidOperationException("❌ Missing SmtpSettings section in appsettings.json");
+
+                var host = smtpSettings["Host"];
+                var port = int.Parse(smtpSettings["Port"]);
+                var enableSsl = bool.Parse(smtpSettings["EnableSsl"]);
+                var userName = smtpSettings["UserName"];
+                var password = smtpSettings["Password"];
+
+                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
+                    throw new InvalidOperationException("❌ Incomplete SMTP configuration in appsettings.json");
+
+                using (var client = new SmtpClient(host, port))
+                {
+                    client.EnableSsl = enableSsl;
+                    client.Credentials = new NetworkCredential(userName, password);
+
+                    var mailMessage = new MailMessage
+                    {
+                        From = new MailAddress(userName),
+                        Subject = subject,
+                        Body = body,
+                        IsBodyHtml = true
+                    };
+
+                    // Add recipients
+                    if (!string.IsNullOrEmpty(to))
+                    {
+                        foreach (var email in to.Split(';'))
+                        {
+                            if (!string.IsNullOrEmpty(email.Trim()))
+                                mailMessage.To.Add(email.Trim());
+                        }
+                    }
+
+                    // Add CC recipients
+                    if (!string.IsNullOrEmpty(cc))
+                    {
+                        foreach (var email in cc.Split(';'))
+                        {
+                            if (!string.IsNullOrEmpty(email.Trim()))
+                                mailMessage.CC.Add(email.Trim());
+                        }
+                    }
+
+                    // Always BCC ayu.sihombing@se.com
+                    mailMessage.Bcc.Add("ayu.sihombing@se.com");
+
+                    client.Send(mailMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending email: {ex.Message}");
+                // Don't throw - email failure shouldn't break the main functionality
+            }
+        }
+
+        // Email method for CREATE_NEW_REQUEST
+        private async Task SendEmailCreateRequest(string reqId, string remark)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(ConnectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    // Get request details
+                    var query = @"SELECT requestor, reference, quantity, box_type, ppap, source_issue, 
+                                 issue_category, issue_detail, source_sloc, dest_sloc, remark, rack, 
+                                 rack_row, rack_column, pic, max_aging 
+                          FROM tbl_tracking_QAINP WHERE req_id = @reqId";
+                    
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@reqId", reqId);
+                        
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var requestor = reader["requestor"].ToString();
+                                var reference = reader["reference"].ToString();
+                                var quantity = reader["quantity"].ToString();
+                                var boxType = reader["box_type"].ToString();
+                                var ppap = reader["ppap"].ToString();
+                                var sourceIssue = reader["source_issue"].ToString();
+                                var issueCategory = reader["issue_category"].ToString();
+                                var issueDetail = reader["issue_detail"].ToString();
+                                var sourceSloc = reader["source_sloc"].ToString();
+                                var destSloc = reader["dest_sloc"].ToString();
+                                var rack = reader["rack"].ToString();
+                                var rackRow = reader["rack_row"].ToString();
+                                var rackColumn = reader["rack_column"].ToString();
+                                var pic = reader["pic"].ToString();
+                                var maxAging = reader["max_aging"] is DBNull ? DateTime.Now : Convert.ToDateTime(reader["max_aging"]);
+
+                                // Determine route level
+                                string routeLevel = remark == "SIL" ? "Q1 - CS&Q Manager" : 
+                                                 remark == "Process" ? "Q2 - CS&Q Manager" : "Q1 - CS&Q Manager";
+
+                                // Get manager emails
+                                var managerEmails = await GetManagerEmails(conn, routeLevel);
+                                Console.WriteLine("Manager Emails" + managerEmails);
+                                var requestorEmail = await GetUserEmail(conn, requestor);
+                                var picEmail = await GetUserEmail(conn, pic);
+                                var requestorName = await GetUserName(conn, requestor);
+
+                                string subject = $"SEMB Quarantine Management : [{reqId}] Waiting Approval";
+                                string body = GenerateCreateRequestEmailBody(reqId, requestorName, reference, quantity, 
+                                    sourceSloc, destSloc, maxAging, pic, sourceIssue, issueCategory, issueDetail, 
+                                    rack, rackRow, rackColumn, remark);
+
+                                string cc = $"{requestorEmail};{picEmail}";
+
+                                await SendEmailAsync(managerEmails, cc, subject, body);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SendEmailCreateRequest: {ex.Message}");
+            }
+        }
+
+        // Email method for EDIT_DATA_REQUEST
+        private async Task SendEmailEditDataRequest(string reqId, string remark)
+        {
+            try
+            {
+                await SendEmailCreateRequest(reqId, remark); // Same email format as create request
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SendEmailEditDataRequest: {ex.Message}");
+            }
+        }
+        
+        // Email method for UPLOAD_DATA_REQUEST
+        public async Task SendEmailUploadRequest(string reqId, string remark)
+        {
+            try
+            {
+                await SendEmailCreateRequest(reqId, remark); // Same email format as create request
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SendEmailEditDataRequest: {ex.Message}");
+            }
+        }
+
+        // Email method for DECLINED_DATA
+        private async Task SendEmailDeclinedData(string reqId, string remark)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(ConnectionString))
+                {
+                    await conn.OpenAsync();
+
+                    var query = @"SELECT requestor, reference, quantity, box_type, ppap, source_issue, 
+                                 issue_category, issue_detail, source_sloc, dest_sloc, remark, rack, 
+                                 rack_row, rack_column, pic, max_aging, verify_coment, updated_coment 
+                          FROM tbl_tracking_QAINP WHERE req_id = @reqId";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@reqId", reqId);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var requestor = reader["requestor"].ToString();
+                                var reference = reader["reference"].ToString();
+                                var quantity = reader["quantity"].ToString();
+                                var boxType = reader["box_type"].ToString();
+                                var sourceIssue = reader["source_issue"].ToString();
+                                var issueCategory = reader["issue_category"].ToString();
+                                var issueDetail = reader["issue_detail"].ToString();
+                                var sourceSloc = reader["source_sloc"].ToString();
+                                var destSloc = reader["dest_sloc"].ToString();
+                                var rack = reader["rack"].ToString();
+                                var rackRow = reader["rack_row"].ToString();
+                                var rackColumn = reader["rack_column"].ToString();
+                                var pic = reader["pic"].ToString();
+                                var verifyComent = reader["verify_coment"].ToString();
+                                var updatedComent = reader["updated_coment"].ToString();
+                                var maxAging = reader["max_aging"] is DBNull ? DateTime.Now : Convert.ToDateTime(reader["max_aging"]);
+
+                                string routeLevel = remark == "SIL" ? "Q1 - CS&Q Manager" :
+                                                 remark == "Process" ? "Q2 - CS&Q Manager" : "Q1 - CS&Q Manager";
+
+                                var managerEmails = await GetManagerEmails(conn, routeLevel);
+                                var requestorEmail = await GetUserEmail(conn, requestor);
+                                var picEmail = await GetUserEmail(conn, pic);
+                                var requestorName = await GetUserName(conn, requestor);
+
+                                string subject = $"SEMB Quarantine Management : [{reqId}] Waiting Approval";
+                                string body = GenerateDeclinedDataEmailBody(reqId, requestorName, reference, quantity,
+                                    sourceSloc, destSloc, maxAging, pic, sourceIssue, issueCategory, issueDetail,
+                                    rack, rackRow, rackColumn, verifyComent, updatedComent);
+
+                                string cc = $"{requestorEmail};{picEmail}";
+
+                                await SendEmailAsync(managerEmails, cc, subject, body);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SendEmailDeclinedData: {ex.Message}");
+            }
+        }
+
+        // Email method for UPDATE_UNDER_ANALYSIS
+        private async Task SendEmailUpdateUnderAnalysis(string reqId)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(ConnectionString))
+                {
+                    await conn.OpenAsync();
+                    
+                    var query = @"SELECT requestor, reference, disposition, final_status, dest_sloc, result 
+                          FROM tbl_tracking_QAINP WHERE req_id = @reqId";
+                    
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@reqId", reqId);
+                        
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var requestor = reader["requestor"].ToString();
+                                var reference = reader["reference"].ToString();
+                                var disposition = reader["disposition"].ToString();
+                                var finalStatus = reader["final_status"].ToString();
+                                var destSloc = reader["dest_sloc"].ToString();
+                                var result = reader["result"].ToString();
+
+                                var requestorEmail = await GetUserEmail(conn, requestor);
+                                var requestorName = await GetUserName(conn, requestor);
+
+                                string subject = $"SEMB Quarantine Management : [{reqId}] Analysis Completed";
+                                string body = GenerateAnalysisCompleteEmailBody(reqId, requestorName, reference, 
+                                    disposition, finalStatus, destSloc, result);
+
+                                await SendEmailAsync(requestorEmail, "", subject, body);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SendEmailUpdateUnderAnalysis: {ex.Message}");
+            }
+        }
+
+        // Helper methods
+        private async Task<string> GetManagerEmails(SqlConnection conn, string routeLevel)
+        {
+            var query = @"SELECT STRING_AGG(a.usr_email, ';') as emails
+                  FROM mst_users_QAS AS a
+                  LEFT JOIN mst_approvers_QAS AS b ON a.usr_sesa = b.usr_sesa
+                  WHERE b.route_lvl = @routeLevel";
+
+            using (var cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@routeLevel", routeLevel);
+                var result = await cmd.ExecuteScalarAsync();
+                Console.WriteLine("route:" + routeLevel);
+                Console.WriteLine("ManagerEmails:" + result, "route:" + routeLevel);
+                return result?.ToString() ?? "";
+            }
+        }
+
+        private async Task<string> GetUserEmail(SqlConnection conn, string userSesa)
+        {
+            var query = "SELECT usr_email FROM mst_users_QAS WHERE usr_sesa = @userSesa";
+            using (var cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@userSesa", userSesa);
+                var result = await cmd.ExecuteScalarAsync();
+                return result?.ToString() ?? "";
+            }
+        }
+
+        private async Task<string> GetUserName(SqlConnection conn, string userSesa)
+        {
+            var query = "SELECT usr_name FROM mst_users_QAS WHERE usr_sesa = @userSesa";
+            using (var cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@userSesa", userSesa);
+                var result = await cmd.ExecuteScalarAsync();
+                return result?.ToString() ?? userSesa;
+            }
+        }
+
+        // Email body generation methods
+        private string GenerateCreateRequestEmailBody(string reqId, string requestorName, string reference, 
+            string quantity, string sourceSloc, string destSloc, DateTime maxAging, string pic, 
+            string sourceIssue, string issueCategory, string issueDetail, string rack, string rackRow, 
+            string rackColumn, string remark)
+        {
+            return $@"
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Quarantine Request Notification</title>
+    <style>
+        body {{ font-family: Roboto, Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }}
+        .container {{ max-width: 650px; margin: 0 auto; padding: 1px; }}
+        .card {{ background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }}
+        .text-center {{ text-align: center; }}
+        .highlight {{ font-weight: bold; color: #4CAF50; }}
+        table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 1px solid #ddd; }}
+        th {{ background-color: #4CAF50; color: white; padding: 3px; border: 1px solid #ddd; }}
+        td {{ border: 1px solid #ddd; padding: 3px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""card"">
+            <h3 class=""text-center"">Dear <span class=""highlight"">CS&Q Manager</span>,</h3>
+            <p class=""text-center"">Please review and approve this request. Requestor of this item is <b>{requestorName}</b></p>
+            
+            <h3 class=""text-center"">Request Summary</h3>
+            <table>
+                <tr><th>Reference</th><th>Quantity</th><th>Source Sloc</th><th>Destination Sloc</th><th>Maximum Stay</th></tr>
+                <tr><td>{reference}</td><td>{quantity}</td><td>{sourceSloc}</td><td>{destSloc}</td><td>{maxAging:yyyy-MM-dd HH:mm:ss}</td></tr>
+            </table>
+            
+            <h3 class=""text-center"">Request Details</h3>
+            <table>
+                <tr><th>Part ID</th><td>{reference}</td></tr>
+                <tr><th>Requestor</th><td>{requestorName}</td></tr>
+                <tr><th>PIC</th><td>{pic}</td></tr>
+                <tr><th>Source Issue</th><td>{sourceIssue}</td></tr>
+                <tr><th>Issue</th><td>{issueCategory}</td></tr>
+                <tr><th>Issue Detail</th><td>{issueDetail}</td></tr>
+                <tr><th>Rack</th><td>{rack} - {rackRow} - {rackColumn}</td></tr>
+                <tr><th>Remark</th><td>{remark}</td></tr>
+            </table>
+            
+            <div class=""text-center"">
+                <a href=""https://eajdigitization.se.com/SEMB_QAMANAGEMENT"" style=""background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;"">Click Here</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+        }
+
+        private string GenerateDeclinedDataEmailBody(string reqId, string requestorName, string reference, 
+            string quantity, string sourceSloc, string destSloc, DateTime maxAging, string pic, 
+            string sourceIssue, string issueCategory, string issueDetail, string rack, string rackRow, 
+            string rackColumn, string verifyComent, string updatedComent)
+        {
+            var commentText = !string.IsNullOrEmpty(updatedComent) ? 
+                $"Updated Comment: <span class=\"highlight\">{updatedComent}</span>" : 
+                $"Comment Action: <span class=\"highlight\">{verifyComent ?? "No comment provided"}</span>";
+
+            return $@"
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Quarantine Request Notification</title>
+    <style>
+        body {{ font-family: Roboto, Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }}
+        .container {{ max-width: 650px; margin: 0 auto; padding: 1px; }}
+        .card {{ background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }}
+        .text-center {{ text-align: center; }}
+        .highlight {{ font-weight: bold; color: #4CAF50; }}
+        table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 1px solid #ddd; }}
+        th {{ background-color: #4CAF50; color: white; padding: 3px; border: 1px solid #ddd; }}
+        td {{ border: 1px solid #ddd; padding: 3px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""card"">
+            <h3 class=""text-center"">Dear <span class=""highlight"">CSQ Manager</span>,</h3>
+            <p class=""text-center"">Declined approval has been updated by the requestor. Please review and approve this request. The requestor of this item is <b>{requestorName}</b></p>
+            <p class=""text-center"">{commentText}</p>
+            
+            <h3 class=""text-center"">Request Summary</h3>
+            <table>
+                <tr><th>Reference</th><th>Quantity</th><th>Source Sloc</th><th>Destination Sloc</th><th>Maximum Stay</th></tr>
+                <tr><td>{reference}</td><td>{quantity}</td><td>{sourceSloc}</td><td>{destSloc}</td><td>{maxAging:yyyy-MM-dd HH:mm:ss}</td></tr>
+            </table>
+            
+            <h3 class=""text-center"">Request Details</h3>
+            <table>
+                <tr><th>Part ID</th><td>{reference}</td></tr>
+                <tr><th>Requestor</th><td>{requestorName}</td></tr>
+                <tr><th>PIC</th><td>{pic}</td></tr>
+                <tr><th>Source Issue</th><td>{sourceIssue}</td></tr>
+                <tr><th>Issue</th><td>{issueCategory}</td></tr>
+                <tr><th>Issue Detail</th><td>{issueDetail}</td></tr>
+                <tr><th>Rack</th><td>{rack} - {rackRow} - {rackColumn}</td></tr>
+            </table>
+            
+            <div class=""text-center"">
+                <a href=""https://eajdigitization.se.com/SEMB_PEM_QUARANTINE"" style=""background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;"">Click Here</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+        }
+
+        private string GenerateAnalysisCompleteEmailBody(string reqId, string requestorName, string reference, 
+            string disposition, string finalStatus, string destSloc, string result)
+        {
+            return $@"
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Analysis Complete Notification</title>
+    <style>
+        body {{ font-family: Roboto, Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }}
+        .container {{ max-width: 650px; margin: 0 auto; padding: 20px; }}
+        .card {{ background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; }}
+        .highlight {{ font-weight: bold; color: #4CAF50; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""card"">
+            <h3>Dear <span class=""highlight"">{requestorName}</span>,</h3>
+            <p>Your quarantine request analysis has been completed.</p>
+            
+            <h4>Request Details:</h4>
+            <p><strong>Request ID:</strong> {reqId}</p>
+            <p><strong>Reference:</strong> {reference}</p>
+            <p><strong>Disposition:</strong> {disposition}</p>
+            <p><strong>Final Status:</strong> {finalStatus}</p>
+            <p><strong>Destination SLOC:</strong> {destSloc}</p>
+            <p><strong>Result:</strong> {result}</p>
+            
+            <p>Thank you for using SEMB Quarantine Management System.</p>
+        </div>
+    </div>
+</body>
+</html>";
+        }
         public List<SelectModel> GetIssueFilter(string cell)
         {
             List<SelectModel> data = new List<SelectModel>();
@@ -912,6 +1397,12 @@ namespace Quarantine_Management.Function
                 conn.Close();
             }
 
+            // Send email after successful creation
+            if (rowsAffected > 0 || rowsAffected == -1)
+            {
+                await SendEmailCreateRequest(req_id, remark);
+            }
+
             // Jika rowsAffected adalah -1, kita bisa mengembalikan 1 untuk menunjukkan bahwa insert berhasil
             return rowsAffected == -1 ? 1 : rowsAffected;
         }
@@ -1363,6 +1854,12 @@ namespace Quarantine_Management.Function
                     }
                 }
 
+                // Send email after successful edit
+                if (rowsAffected > 0 || rowsAffected == -1)
+                {
+                    await SendEmailEditDataRequest(req_id, remark);
+                }
+
                 return rowsAffected == -1 ? 1 : rowsAffected;
             }
             catch (Exception ex)
@@ -1799,6 +2296,12 @@ namespace Quarantine_Management.Function
                     conn.Close();
                 }
 
+                // Send email after successful update
+                if (rowsAffected > 0 || rowsAffected == -1)
+                {
+                    await SendEmailDeclinedData(req_id, remark);
+                }
+
                 // If rowsAffected is -1, return 1 to indicate successful execution
                 return rowsAffected == -1 ? 1 : rowsAffected;
             }
@@ -2159,6 +2662,17 @@ namespace Quarantine_Management.Function
                     int rowsAffected = cmd.ExecuteNonQuery();
                     conn.Close();
 
+                    // Send email after successful update
+                    if (rowsAffected > 0 || rowsAffected == -1)
+                    {
+                        // Get req_id from id_req
+                        string reqId = GetReqIdFromIdReq(id_req);
+                        if (!string.IsNullOrEmpty(reqId))
+                        {
+                            _ = SendEmailUpdateUnderAnalysis(reqId); // Fire and forget
+                        }
+                    }
+
                     // Handle -1 return value (which often means success in stored procedures)
                     return rowsAffected == -1 ? 1 : rowsAffected;
                 }
@@ -2168,6 +2682,21 @@ namespace Quarantine_Management.Function
                 // Add logging here
                 Console.WriteLine($"Error in UpdateRequest: {ex.Message}");
                 throw; // Re-throw to handle at caller level or add more specific handling
+            }
+        }
+
+        private string GetReqIdFromIdReq(string id_req)
+        {
+            using (var conn = new SqlConnection(ConnectionString))
+            {
+                var query = "SELECT req_id FROM tbl_tracking_QAINP WHERE id_req = @id_req";
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@id_req", id_req);
+                    conn.Open();
+                    var result = cmd.ExecuteScalar();
+                    return result?.ToString() ?? "";
+                }
             }
         }
 

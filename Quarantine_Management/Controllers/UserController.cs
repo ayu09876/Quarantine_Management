@@ -1099,6 +1099,7 @@ namespace Quarantine_Management.Controllers
         [HttpPost]
         public async Task<IActionResult> UploadNewRequest(IFormFile myExcelData)
         {
+            var db = new DatabaseAccessLayer();
             if (myExcelData == null || myExcelData.Length == 0)
             {
                 return Json(new { success = false, message = "Please upload an Excel file (.xlsx)." });
@@ -1183,6 +1184,12 @@ namespace Quarantine_Management.Controllers
                                     conn.Open();
                                     rowsAffected = cmd.ExecuteNonQuery();
                                     conn.Close();
+                                }
+
+                                // Send email after successful creation
+                                if (rowsAffected > 0 || rowsAffected == -1)
+                                {
+                                    await db.SendEmailUploadRequest(req_id, remarkValue);
                                 }
 
                                 importedBOXs.Add(referenceValue);
