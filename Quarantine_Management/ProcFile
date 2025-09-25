@@ -1,1 +1,0 @@
-web: dotnet YourProjectName.dll --server.urls http://+:$PORT
